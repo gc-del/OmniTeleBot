@@ -110,7 +110,7 @@ python main.py --sim --keyboard --save --output-dir data/demos
 Joy-Con 控制：
 
 ```bash
-sudo /home/wufuwei/miniconda3/envs/bobacbot/bin/python main.py --sim --joycon
+python main.py --sim --joycon（
 ```
 
 手机 WebXR 遥操作：
