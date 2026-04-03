@@ -67,6 +67,16 @@ conda activate bobacbot
 pip install -r requirements.txt
 ```
 
+### 3. 训练环境
+
+Diffusion Policy 训练建议单独环境：
+
+```bash
+cd training/diffusion_policy
+conda env create -f conda_environment.yaml
+conda activate robodiff
+```
+
 
 ## 快速开始
 
@@ -81,7 +91,7 @@ python main.py --sim
 键盘控制：
 
 ```bash
-python main.py --sim --keyboard
+python main.py --sim --keyboard 
 ```
 
 Joy-Con 控制：
@@ -89,7 +99,6 @@ Joy-Con 控制：
 ```bash
 python main.py --sim --joycon
 ```
-
 
 ### 2. 运行逻辑
 
@@ -167,7 +176,7 @@ python main.py --sim --keyboard --save --output-dir data/demos
 或：
 
 ```bash
-python main.py --sim --teleop --save --output-dir data/demos
+python main.py --sim --joycon --save --output-dir data/demos
 ```
 
 ### 回放数据
@@ -315,6 +324,62 @@ Bobacbot/
 ├── joycon-robotics-master/
 └── training/
 ```
+
+## 常用命令
+
+```bash
+# 仿真
+python main.py --sim
+
+# 键盘遥操作
+python main.py --sim --keyboard --save --output-dir data/demos
+
+# Joy-Con 遥操作
+python main.py --sim --joycon
+
+
+# 回放
+python replay_episodes.py --sim --input-dir data/demos
+
+# 转换数据格式
+python convert_to_robomimic_hdf5.py --input-dir data/demos --output-path data/demos.hdf5
+
+# 训练
+cd training/diffusion_policy
+conda activate robodiff
+python train.py --config-name=train_diffusion_unet_real_hybrid_workspace task=square_image_abs
+```
+
+## 参考文献
+
+### TidyBot++
+```
+@inproceedings{wu2024tidybot,
+  title = {TidyBot++: An Open-Source Holonomic Mobile Manipulator for Robot Learning},
+  author = {Wu, Jimmy and Chong, William and Holmberg, Robert and Prasad, Aaditya and Gao, Yihuai and Khatib, Oussama and Song, Shuran and Rusinkiewicz, Szymon and Bohg, Jeannette},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  year = {2024}
+}
+```
+
+- 项目主页: http://tidybot2.github.io
+- 代码仓库: https://github.com/jimmyyhwu/tidybot2
+- 论文: https://arxiv.org/abs/2412.10447
+
+### Diffusion Policy
+```
+@inproceedings{chi2023diffusionpolicy,
+  title = {Diffusion Policy: Visuomotor Policy Learning via Action Diffusion},
+  author = {Chi, Cheng and Feng, Siyuan and Du, Yilun and Xu, Zhenjia and Cousineau, Eric and Burchfiel, Benjamin and Song, Shuran},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year = {2023}
+}
+```
+
+- 项目主页: https://diffusion-policy.cs.columbia.edu/
+- 代码仓库: https://github.com/real-stanford/diffusion_policy
+
+## 致谢
 
 本项目基于以下开源项目：
 - [TidyBot++](https://github.com/jimmyyhwu/tidybot2): 全向移动操作机器人平台
