@@ -67,29 +67,6 @@ conda activate bobacbot
 pip install -r requirements.txt
 ```
 
-### 3. 训练环境
-
-Diffusion Policy 训练建议单独环境：
-
-```bash
-cd training/diffusion_policy
-conda env create -f conda_environment.yaml
-conda activate robodiff
-```
-
-### 4. Joy-Con 设备权限
-
-如果使用 Joy-Con 控制，Linux 下可能需要 `hidraw` 权限。仓库中提供了 udev 规则示例：`99-joycon.rules`。
-
-典型处理方式：
-
-```bash
-sudo cp 99-joycon.rules /etc/udev/rules.d/
-sudo udevadm control --reload-rules
-sudo udevadm trigger
-```
-
-重新插拔手柄后再启动程序。
 
 ## 快速开始
 
@@ -104,20 +81,15 @@ python main.py --sim
 键盘控制：
 
 ```bash
-python main.py --sim --keyboard --save --output-dir data/demos
+python main.py --sim --keyboard
 ```
 
 Joy-Con 控制：
 
 ```bash
-python main.py --sim --joycon（
+python main.py --sim --joycon
 ```
 
-手机 WebXR 遥操作：
-
-```bash
-python main.py --sim --teleop --save --output-dir data/demos
-```
 
 ### 2. 运行逻辑
 
@@ -165,13 +137,6 @@ Joy-Con 模式分工如下：
 
 当前工程里，机械臂控制最终会被转换成末端位姿目标，再交给 IK 求解整条机械臂关节解。
 
-### 手机遥操作
-
-WebXR 遥操作适合采集较自然的演示数据。流程：
-
-1. 启动 `python main.py --sim --teleop --save --output-dir data/demos`
-2. 用手机浏览器打开终端输出的地址
-3. 根据页面提示进行控制
 
 ## 数据采集
 
