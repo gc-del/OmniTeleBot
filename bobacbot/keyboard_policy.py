@@ -205,13 +205,16 @@ class KeyboardRemotePolicy(Policy):
         gripper_keys = {'z', 'x'}
 
         if self.active_keys & base_keys:
+            action['base_active'] = True
             action['base_pose'] = self.base_target_pose.copy()
 
         if self.active_keys & arm_keys:
+            action['arm_active'] = True
             action['arm_pos'] = self.arm_target_pos.copy()
             action['arm_quat'] = arm_quat
 
         if self.active_keys & gripper_keys:
+            action['arm_active'] = True
             action['gripper_pos'] = self.gripper_target_pos.copy()
 
         return action
