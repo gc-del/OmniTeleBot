@@ -90,11 +90,11 @@ def main(args):
     if args.sim:
         from mujoco_env import MujocoEnv
         if args.teleop:
-            env = MujocoEnv(show_images=False, randomize_robot_position=args.random)
+            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
         elif args.joycon:
-            env = MujocoEnv(show_images=False, randomize_robot_position=args.random)
+            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
         else:
-            env = MujocoEnv(randomize_robot_position=args.random)
+            env = MujocoEnv(disable_mujoco_shortcuts=True,show_images=args.show_images, randomize_robot_position=args.random)
     else:
         from real_env import RealEnv
         env = RealEnv()
@@ -127,4 +127,5 @@ if __name__ == '__main__':
     parser.add_argument('--save', action='store_true', help='保存演示数据')
     parser.add_argument('--random', action='store_true', help='随机化机器人初始位置 (默认使用XML中的固定位置)')
     parser.add_argument('--output-dir', default='data/0714', help='演示数据输出目录')
+    parser.add_argument('--show-images', action='store_true', help='是否显示仿真图像')
     main(parser.parse_args())

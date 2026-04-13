@@ -500,15 +500,29 @@ class MujocoEnv:
         """图像可视化循环 (在独立进程中运行)"""
         shm_images = [ShmImage(existing_instance=shm_image) for shm_image in self.shm_images]
         last_imshow_time = time.time()
+
+        moved = False  # ⭐ 控制只排列一次
+
         while True:
             # 控制显示帧率为10fps
             while time.time() - last_imshow_time < 0.1:
                 time.sleep(0.01)
             last_imshow_time = time.time()
+
             # 显示所有相机图像
             for i, shm_image in enumerate(shm_images):
-                cv.imshow(shm_image.camera_name, cv.cvtColor(shm_image.data, cv.COLOR_RGB2BGR))
-                cv.moveWindow(shm_image.camera_name, 640 * i, -100)  # 排列窗口位置
+                name = shm_image.camera_name
+
+                cv.imshow(name, cv.cvtColor(shm_image.data, cv.COLOR_RGB2BGR))
+
+                # ⭐ 只在“第二帧”执行一次排列（关键）
+                if not moved:
+                    cv.moveWindow(name, 640 * i, 0)  # ⚠️ 建议 y=0，不要 -100
+
+            # ⭐ 等窗口真正创建后再标记完成
+            if not moved:
+                moved = True
+
             cv.waitKey(1)
 
     def reset(self):
