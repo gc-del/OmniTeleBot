@@ -94,7 +94,7 @@ python main.py --sim
 python main.py --sim --keyboard 
 ```
 
-Joy-Con 控制：
+Joy-Con手柄控制：
 
 ```bash
 python main.py --sim --joycon
