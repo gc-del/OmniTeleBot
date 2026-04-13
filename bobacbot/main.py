@@ -94,7 +94,7 @@ def main(args):
         elif args.joycon:
             env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
         else:
-            env = MujocoEnv(disable_mujoco_shortcuts=True,show_images=args.show_images, randomize_robot_position=args.random)
+            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
     else:
         from real_env import RealEnv
         env = RealEnv()
