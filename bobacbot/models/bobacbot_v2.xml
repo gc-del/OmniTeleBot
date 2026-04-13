@@ -78,18 +78,18 @@
     <material name="blue" rgba="0 0 0.7 1"/>
     <material name="white" rgba="1 1 1 1"/>
     
-    <mesh name="base_link" file="../bobac3_description/meshes/base_link.STL"/>
-    <mesh name="cover_link" file="../bobac3_description/meshes/cover_link_cspc.STL"/>
-    <mesh name="smoke_link" file="../bobac3_description/meshes/smoke_link.STL"/>
-    <mesh name="humtmper_link" file="../bobac3_description/meshes/humtmper_link.STL"/>
-    <mesh name="left_ultrasound_link" file="../bobac3_description/meshes/left_ultrasound_link.STL"/>
-    <mesh name="right_ultrasound_link" file="../bobac3_description/meshes/right_ultrasound_link.STL"/>
-    <mesh name="bottom_camera_link" file="../bobac3_description/meshes/bottom_camera_link.STL"/>
-    <mesh name="base_berxel_camera_link" file="../bobac3_description/meshes/base_berxel_camera_link.STL"/>
-    <mesh name="front_lidar_link" file="../bobac3_description/meshes/front_lidar_link.STL"/>
-    <mesh name="rear_lidar_link" file="../bobac3_description/meshes/rear_lidar_link.STL"/>
-    <mesh name="basic_kit_link" file="../bobac3_description/meshes/basic_kit_link_cspc.STL"/>
-    <mesh name="top_camera_link" file="../bobac3_description/meshes/top_camera_link.STL"/>
+    <mesh name="base_link" file="bobac3/meshes/base_link.STL"/>
+    <mesh name="cover_link" file="bobac3/meshes/cover_link_cspc.STL"/>
+    <mesh name="smoke_link" file="bobac3/meshes/smoke_link.STL"/>
+    <mesh name="humtmper_link" file="bobac3/meshes/humtmper_link.STL"/>
+    <mesh name="left_ultrasound_link" file="bobac3/meshes/left_ultrasound_link.STL"/>
+    <mesh name="right_ultrasound_link" file="bobac3/meshes/right_ultrasound_link.STL"/>
+    <mesh name="bottom_camera_link" file="bobac3/meshes/bottom_camera_link.STL"/>
+    <mesh name="base_berxel_camera_link" file="bobac3/meshes/base_berxel_camera_link.STL"/>
+    <mesh name="front_lidar_link" file="bobac3/meshes/front_lidar_link.STL"/>
+    <mesh name="rear_lidar_link" file="bobac3/meshes/rear_lidar_link.STL"/>
+    <mesh name="basic_kit_link" file="bobac3/meshes/basic_kit_link_cspc.STL"/>
+    <mesh name="top_camera_link" file="bobac3/meshes/top_camera_link.STL"/>
 
     <!-- eco65b机械臂资源 -->
     <mesh name="eco65b/base_link" file="eco65b/meshes/base_link.stl"/>
@@ -190,7 +190,7 @@
       </body>
       
       <!-- 顶盖 -->
-      <body name="cover_link" pos="0.034465 0 0.2945">
+      <body name="cover_link" pos="0.042015 0 0.2945">
         <inertial pos="-0.04603 0.00011 -0.01220" mass="0.02" diaginertia="0.0077 0.0119 0.0176"/>
         <geom class="base/visual" mesh="cover_link" material="white"/>
         <geom class="base/collision" mesh="cover_link"/>
@@ -199,7 +199,7 @@
             diaginertia="0.0111746368285295 0.00566215613507705 0.0092111197679973"/>
           <geom class="base/visual" mesh="basic_kit_link" material="white"/>
           <geom class="base/collision" mesh="basic_kit_link"/>
-          <body name="top_camera_link" pos="-0.016389 0 0.45762" euler="0 -0.7854 3.1416">
+          <body name="top_camera_link" pos="-0.016389 0 0.45762" euler="0 0.785 3.14159">
             <inertial pos="-0.0144410472853577 3.50221192592643E-07 -0.0155879253099328" mass="0.0930702512999254"
               diaginertia="8.46696104375507E-05 5.8230348276419E-05 3.74977551477733E-05"/>
             <geom class="base/visual" mesh="top_camera_link" material="dark_gray"/>
@@ -209,12 +209,12 @@
       </body>
       
       <!-- 轮子 - 使用简化几何形状 -->
-      <body name="left_wheel_link" pos="-0.079 -0.136 0.020" euler="0 1.57079 -2.094">
+      <body name="left_wheel_link" pos="-0.079 -0.136 0.020" euler="1.5709 -0.523 0">
         <inertial pos="0 0 0" mass="0.10" diaginertia="7.6e-5 7.6e-5 1.25e-4"/>
         <geom type="cylinder" size="0.045 0.01" rgba="0.3 0.3 0.3 1.0"/>
       </body>
       
-      <body name="right_wheel_link" pos="-0.079 0.136 0.02" euler="0 1.57079 2.094">
+      <body name="right_wheel_link" pos="-0.079 0.136 0.02" euler="1.5709 0.523 0">
         <inertial pos="0 0 0" mass="0.10" diaginertia="7.6e-5 7.6e-5 1.25e-4"/>
         <geom type="cylinder" size="0.045 0.01" rgba="0.3 0.3 0.3 1.0"/>
       </body>
