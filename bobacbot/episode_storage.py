@@ -12,12 +12,59 @@ from constants import POLICY_CONTROL_FREQ
 
 def write_frames_to_mp4(frames, mp4_path):
     height, width, _ = frames[0].shape
-    fourcc = cv.VideoWriter_fourcc(*'avc1')
-    out = cv.VideoWriter(str(mp4_path), fourcc, POLICY_CONTROL_FREQ, (width, height))
-    for frame in frames:
-        bgr_frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
-        out.write(bgr_frame)
-    out.release()
+    
+    # 尝试多种编码器，提高兼容性
+    codecs_to_try = [
+        ('mp4v', 'MPEG-4'),  # 放在首位，避免 avc1 的错误日志
+        ('XVID', 'Xvid MPEG-4'),
+        ('H264', 'H.264 (alternative)'),
+        ('avc1', 'H.264/AVC (MPEG-4)'),
+    ]
+    
+    out = None
+    original_error_mode = cv.Error
+    try:
+        # 临时抑制 OpenCV 错误日志
+        def suppress_errors(status, func_name, err_msg, file_name, line):
+            pass  # 忽略所有错误
+        
+        cv.Error = suppress_errors
+        
+        for fourcc_code, description in codecs_to_try:
+            try:
+                fourcc = cv.VideoWriter_fourcc(*fourcc_code)
+                out = cv.VideoWriter(str(mp4_path), fourcc, POLICY_CONTROL_FREQ, (width, height))
+                
+                # 检查 VideoWriter 是否成功初始化
+                if out.isOpened():
+                    print(f'Using video codec: {fourcc_code} ({description})')
+                    break
+                else:
+                    if out is not None:
+                        out.release()
+                    out = None
+            except Exception:
+                if out is not None:
+                    out.release()
+                    out = None
+                continue  # 继续尝试下一个编码器
+    
+    finally:
+        # 恢复原始错误处理
+        cv.Error = original_error_mode
+    
+    if out is None or not out.isOpened():
+        raise RuntimeError(
+            'Failed to initialize VideoWriter with any codec. '
+            'Please install ffmpeg and libx264: sudo apt install ffmpeg libx264-dev'
+        )
+    
+    try:
+        for frame in frames:
+            bgr_frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+            out.write(bgr_frame)
+    finally:
+        out.release()
 
 def read_frames_from_mp4(mp4_path):
     cap = cv.VideoCapture(str(mp4_path))
