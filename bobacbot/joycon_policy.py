@@ -1,6 +1,7 @@
 import threading
 import time
 import os
+import math
 
 import hid
 import numpy as np
@@ -80,8 +81,8 @@ class JoyconRemotePolicy(Policy):
         self.base_motion_active = False
         self.arm_motion_active = False
 
-        self.base_linear_step = 0.025
-        self.base_yaw_step = 0.06
+        self.base_linear_step = 0.005  # Reduced from 0.025 for slower base movement
+        self.base_yaw_step = 0.01    # Reduced from 0.06 for slower yaw rotation
         self.gripper_open_pos = 1.0
         self.gripper_close_pos = 0.0
         self.left_motion_deadzone = 0.15
@@ -90,6 +91,8 @@ class JoyconRemotePolicy(Policy):
         self.right_home_button_prev = False
         self.right_stationary_frames = 0
         self.right_stationary_frames_required = 30
+        self.right_r_button_prev = False
+        self.right_y_button_prev = False
 
         self.keyboard_listener = keyboard.Listener(on_press=self._on_key_press)
 
@@ -108,7 +111,7 @@ class JoyconRemotePolicy(Policy):
 
     def _on_key_press(self, key):
         try:
-            if key == keyboard.Key.space:
+            if key == keyboard.Key.space or key == keyboard.KeyCode.from_char('y'):
                 with self.state_lock:
                     self._handle_space_press()
         except Exception:
@@ -142,6 +145,8 @@ class JoyconRemotePolicy(Policy):
             print("\n[JoyCon] SPACE pressed - Starting new episode...")
             self.teleop_state = 'episode_started'
             self.enabled = True
+            self.keyboard_state = 'running'
+            print("[JoyCon] Episode started.")
             print("[JoyCon] Press SPACE again to end episode.\n")
 
     def _sync_targets_to_observation(self, obs):
@@ -179,9 +184,27 @@ class JoyconRemotePolicy(Policy):
 
     def _read_right_arm_motion(self):
         pose, gripper_state, _ = self.right.get_control()
+        
+        # # 调试输出：打印右手柄控制值
+        # print(f"\n[DEBUG] Right Joy-Con Control Values:")
+        # print(f"  Pose: x={pose[0]:.4f}, y={pose[1]:.4f}, z={pose[2]:.4f}")
+        # print(f"        roll={pose[3]:.4f} rad ({math.degrees(pose[3]):.2f}°)")
+        # print(f"        pitch={pose[4]:.4f} rad ({math.degrees(pose[4]):.2f}°)")
+        # print(f"        yaw={pose[5]:.4f} rad ({math.degrees(pose[5]):.2f}°)")
+        # print(f"  Gripper State: {gripper_state:.2f}")
+        
         pose = np.asarray(pose, dtype=np.float64)
 
         controller_rot = R.from_euler('xyz', [-pose[3], -pose[4], pose[5]])
+
+        right_r_held = bool(self.right.joycon.get_button_r())
+        if right_r_held and not self.right_r_button_prev:
+            self.right_reference_pose = pose.copy()
+            self.right_reference_rot_inv = controller_rot.inv()
+            self.arm_reference_pos = self.arm_target_pos.copy()
+            self.arm_reference_rot = self.arm_target_rot
+            self.right_stationary_frames = 0
+        self.right_r_button_prev = right_r_held
 
         home_pressed = bool(self.right.joycon.get_button_home())
         if home_pressed and not self.right_home_button_prev:
@@ -197,29 +220,33 @@ class JoyconRemotePolicy(Policy):
             self.arm_reference_pos = self.arm_target_pos.copy()
             self.arm_reference_rot = self.arm_target_rot
 
-        delta_pos = pose[:3] - self.right_reference_pose[:3]
-        relative_rot = controller_rot * self.right_reference_rot_inv
+        if right_r_held:
+            delta_pos = pose[:3] - self.right_reference_pose[:3]
+            relative_rot = controller_rot * self.right_reference_rot_inv
 
-        if np.linalg.norm(delta_pos) < self.right_pose_deadzone and _rotation_angle(relative_rot) < self.right_rot_deadzone:
-            self.right_stationary_frames += 1
-            if self.right_stationary_frames >= self.right_stationary_frames_required:
-                self.right_reference_pose = pose.copy()
-                self.right_reference_rot_inv = controller_rot.inv()
-                self.arm_reference_pos = self.arm_target_pos.copy()
-                self.arm_reference_rot = self.arm_target_rot
+            if np.linalg.norm(delta_pos) < self.right_pose_deadzone and _rotation_angle(relative_rot) < self.right_rot_deadzone:
+                self.right_stationary_frames += 1
+                if self.right_stationary_frames >= self.right_stationary_frames_required:
+                    self.right_reference_pose = pose.copy()
+                    self.right_reference_rot_inv = controller_rot.inv()
+                    self.arm_reference_pos = self.arm_target_pos.copy()
+                    self.arm_reference_rot = self.arm_target_rot
+                    self.right_stationary_frames = 0
+                    delta_pos = np.zeros(3, dtype=np.float64)
+                    relative_rot = R.identity()
+            else:
                 self.right_stationary_frames = 0
-                delta_pos = np.zeros(3, dtype=np.float64)
-                relative_rot = R.identity()
-        else:
-            self.right_stationary_frames = 0
 
-        self.arm_target_pos = self.arm_reference_pos + delta_pos
-        self.arm_target_rot = relative_rot * self.arm_reference_rot
+            self.arm_target_pos = self.arm_reference_pos + delta_pos
+            self.arm_target_rot = relative_rot * self.arm_reference_rot
+
+            arm_active = True
+        else:
+            arm_active = False
 
         self.gripper_target_pos[0] = self.gripper_open_pos if gripper_state == self.right.gripper_open else self.gripper_close_pos
-
         self.gripper_target_pos = np.array([self.gripper_target_pos[0]], dtype=np.float64)
-        return True
+        return arm_active
 
     def _build_action(self):
         arm_quat = self.arm_target_rot.as_quat()
@@ -263,6 +290,13 @@ class JoyconRemotePolicy(Policy):
         if not self.targets_initialized:
             self._sync_targets_to_observation(obs)
             self.targets_initialized = True
+
+        # 支持物理 Joy-Con Y 按钮作为 SPACE 的替代
+        right_y_pressed = bool(self.right.joycon.get_button_y())
+        if right_y_pressed and not self.right_y_button_prev:
+            with self.state_lock:
+                self._handle_space_press()
+        self.right_y_button_prev = right_y_pressed
 
         if not self.enabled:
             if self.teleop_state == 'episode_ended' and not self.episode_ended:
