@@ -39,10 +39,10 @@ python main.py --sim --joycon
 
 ```bash
 # 键盘控制 + 数据保存
-python main.py --sim --keyboard --save --output-dir data/demos
+python main.py --sim --keyboard --save --output-dir data/demos --show-images
 
 # Joy-Con 控制 + 数据保存
-python main.py --sim --joycon --save --output-dir data/demos
+python main.py --sim --joycon --save --output-dir data/demos --show-images
 ```
 
 ---
