@@ -32,6 +32,7 @@ class KeyboardRemotePolicy(Policy):
         self.teleop_state = None
         self.keyboard_state = 'waiting_start'
         self.enabled = False
+        self.episode_ended = False
 
         # ---------------------------
         # targets (state)
@@ -117,16 +118,25 @@ class KeyboardRemotePolicy(Policy):
         if self.keyboard_state == 'waiting_start':
             self.enabled = True
             self.keyboard_state = 'running'
+            self.teleop_state = 'episode_started'
             print("[START]")
 
         elif self.keyboard_state == 'running':
             self.enabled = False
             self.keyboard_state = 'ended'
+            self.teleop_state = 'episode_ended'
             print("[END]")
 
         elif self.keyboard_state == 'ended':
-            self.keyboard_state = 'waiting_start'
+            self.keyboard_state = 'waiting_reset'
+            self.teleop_state = 'reset_env'
             print("[RESET]")
+
+        elif self.keyboard_state == 'waiting_reset':
+            self.keyboard_state = 'running'
+            self.enabled = True
+            self.teleop_state = 'episode_started'
+            print("[START]")
 
     # ---------------------------
     # sync obs
@@ -252,7 +262,13 @@ class KeyboardRemotePolicy(Policy):
             self._sync_targets_to_observation(obs)
             self.targets_initialized = True
 
+        # End-of-episode / reset handling
         if not self.enabled:
+            if not self.episode_ended and self.teleop_state == 'episode_ended':
+                self.episode_ended = True
+                return 'end_episode'
+            if self.teleop_state == 'reset_env':
+                return 'reset_env'
             return None
 
         dt = 0.02  # or POLICY_CONTROL_PERIOD
@@ -268,6 +284,9 @@ class KeyboardRemotePolicy(Policy):
     def reset(self):
         self.targets_initialized = False
         self.active_keys.clear()
+        self.episode_ended = False
+        self.teleop_state = None
+        self.keyboard_state = 'waiting_start' if self.keyboard_state not in ['ended', 'waiting_reset'] else 'waiting_reset'
 
     def close(self):
         if self.keyboard_listener:
