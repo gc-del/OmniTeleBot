@@ -162,8 +162,17 @@ class JoyconRemotePolicy(Policy):
         base_x = _normalize_stick(self.left.joycon.get_stick_left_vertical())
         base_y = -_normalize_stick(self.left.joycon.get_stick_left_horizontal())
 
-        self.base_target_pose[0] += self.base_linear_step * base_x
-        self.base_target_pose[1] += self.base_linear_step * base_y
+        # 获取当前 yaw 角
+        current_yaw = self.base_target_pose[2]
+        
+        # 将机体坐标系的运动转换到世界坐标系
+        # base_x: 前后 (机体坐标系) -> 世界坐标系
+        # base_y: 左右 (机体坐标系) -> 世界坐标系
+        world_dx = base_x * np.cos(current_yaw) - base_y * np.sin(current_yaw)
+        world_dy = base_x * np.sin(current_yaw) + base_y * np.cos(current_yaw)
+        
+        self.base_target_pose[0] += self.base_linear_step * world_dx
+        self.base_target_pose[1] += self.base_linear_step * world_dy
 
         if self.left.joycon.get_button_l():
             self.base_target_pose[2] += self.base_yaw_step
