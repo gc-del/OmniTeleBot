@@ -296,7 +296,8 @@ class JoyconRobotics:
                     self.orientation_sensor.set_yaw_diff(self.yaw_diff)
         
         # Up and down movement
-        joycon_button_up = self.joycon.get_button_r() if self.joycon.is_right() else self.joycon.get_button_l()
+        # joycon_button_up = self.joycon.get_button_r() if self.joycon.is_right() else self.joycon.get_button_l()
+        joycon_button_up = 0
         if joycon_button_up == 1:
             if self.pure_z:
                 self.position[2] += 0.001 * self.dof_speed[2]
@@ -321,13 +322,20 @@ class JoyconRobotics:
         # Common buttons
         self.joycon_button_xup = self.joycon.get_button_x() if self.joycon.is_right() else self.joycon.get_button_up()
         self.joycon_button_bback = self.joycon.get_button_b() if self.joycon.is_right() else self.joycon.get_button_down()
+        # if self.pure_dx:
+        #     if self.joycon_button_xup == 1:
+        #         self.position[0] += 0.001 * self.dof_speed[0]
+                
+        #     elif self.joycon_button_bback == 1:
+        #         self.position[0] -= 0.001 * self.dof_speed[0]
         if self.pure_dx:
             if self.joycon_button_xup == 1:
-                self.position[0] += 0.001 * self.dof_speed[0]
+                # 上升（Z+）
+                self.position[2] += 0.001 * self.dof_speed[2]
                 
             elif self.joycon_button_bback == 1:
-                self.position[0] -= 0.001 * self.dof_speed[0]
-        
+                # 下降（Z-）
+                self.position[2] -= 0.001 * self.dof_speed[2]
         joycon_button_home = self.joycon.get_button_home() if self.joycon.is_right() else self.joycon.get_button_capture()
         if joycon_button_home == 1:
             
