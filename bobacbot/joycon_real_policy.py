@@ -75,7 +75,7 @@ class WSClient:
 # POLICY
 # ======================
 class JoyconRealPolicy(Policy):
-    control_period = 0.1
+    control_period = 0.05
 
     def __init__(self, websocket_url, custom_initial_arm_pos, custom_initial_arm_quat):
 
@@ -314,11 +314,11 @@ class JoyconRealPolicy(Policy):
             delta_r = ctrl_rot * self.ctrl_ref_rot_inv
             
             # 位置缩放因子（0.0~1.0，值越小位置增量越小）
-            position_scale = 1.0
+            position_scale = 0.5
             delta_p_scaled = delta_p * position_scale
             
             # 旋转缩放因子（0.0~1.0，值越小旋转增量越小）
-            rotation_scale = 0.5
+            rotation_scale = 0.8
             delta_euler = delta_r.as_euler('xyz')
             delta_euler_scaled = delta_euler * rotation_scale
             delta_r_scaled = R.from_euler('xyz', delta_euler_scaled)
@@ -348,7 +348,17 @@ class JoyconRealPolicy(Policy):
     # ======================
     def _send(self, arm_active):
 
-    # base
+        # 确定控制模式
+        if self.arm_mode == "homing":
+            control_mode = "init"
+        elif self.arm_mode == "moving":
+            control_mode = "init"
+        elif self.arm_mode == "tracking":
+            control_mode = "tracking"
+        else:  # idle
+            control_mode = "idle"
+
+        # base
         self.ws.send({
             "teleop_mode": "base",
             "position": {
@@ -368,6 +378,7 @@ class JoyconRealPolicy(Policy):
         if arm_active or self.arm_mode == "moving":
             self.ws.send({
                 "teleop_mode": "arm",
+                "control_mode": control_mode,
                 "position": {
                     "x": float(self.arm_pos[0]),
                     "y": float(self.arm_pos[1]),

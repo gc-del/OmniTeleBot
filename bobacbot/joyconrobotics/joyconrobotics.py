@@ -148,8 +148,8 @@ class JoyconRobotics:
                  horizontal_stick_mode: str = "y",
                  close_y: bool = False,
                  limit_dof: bool = False,
-                 glimit: list = [[0.125, -0.4,  0.046, -1.57, -1.5, -1.57], 
-                                 [0.380,  0.4,  0.23,  1.57,  1.5,  1.57]],
+                 glimit: list = [[-0.75, -0.5,  -1.5, -1.57, -1.5, -1.57], 
+                                 [0.750,  0.5,  0.8,  1.57,  1.5,  1.57]],
                  offset_position_m: list = [0.0, 0.0, 0.0], # just use the position and yaw
                  offset_euler_rad: list = [0.0, 0.0, 0.0], # adjust the orientation
                  euler_reverse: list = [1, 1, 1], # -1 reverse
@@ -249,6 +249,11 @@ class JoyconRobotics:
         time.sleep(2)
         self.gyro.reset_orientation
         self.orientation_sensor.reset_yaw()
+        
+        # 重置位置到初始值（如果已初始化）
+        if hasattr(self, 'offset_position_m'):
+            self.position = self.offset_position_m.copy()
+            self.yaw_diff = 0.0
 
         print(f"\033[32mJoycon calibrations is complete.\033[0m")
     
