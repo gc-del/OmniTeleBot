@@ -77,7 +77,10 @@ def run_episode(env, policy, writer=None):
                 # Save to disk in background thread
                 writer.flush_async()
 
-            print('Teleop is now active. Press "Reset env" in the web app when ready to proceed.')
+            if policy.__class__.__name__ == 'KeyboardRemotePolicy':
+                print('Press SPACE to reset environment, then SPACE again to start next episode.')
+            else:
+                print('Teleop is now active. Press "Reset env" in the web app when ready to proceed.')
 
         # Ready for env reset
         elif action == 'reset_env':
@@ -91,9 +94,11 @@ def main(args):
     # Create env
     # For joycon-real mode, always use simulation environment for visualization
     # since the actual control commands are sent via WebSocket from the policy
-    if args.sim or args.joycon_real:
+    if args.sim or args.joycon_real or args.vr_real:
         from mujoco_env import MujocoEnv
-        if args.teleop:
+        if args.vr_real:
+            env = MujocoEnv(render_images=False, show_images=args.show_images, randomize_robot_position=args.random)
+        elif args.teleop:
             env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
         elif args.joycon:
             env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
@@ -106,7 +111,12 @@ def main(args):
         env = RealEnv()
 
     # Create policy
-    if args.teleop:
+    if args.vr_real:
+        from vr_real_policy import VRRealPolicy
+        if not args.websocket_url:
+            raise ValueError('--websocket-url is REQUIRED for --vr-real mode')
+        policy = VRRealPolicy(args.websocket_url)
+    elif args.teleop:
         policy = TeleopPolicy()
     elif args.joycon:
         from joycon_policy import JoyconRemotePolicy
@@ -115,7 +125,7 @@ def main(args):
         from joycon_real_policy import JoyconRealPolicy
         if args.initial_arm_pos is None or args.initial_arm_quat is None:
             raise ValueError('--initial-arm-pos and --initial-arm-quat are REQUIRED for --joycon-real mode')
-        policy = JoyconRealPolicy(websocket_url=args.websocket_url,
+        policy = JoyconRealPolicy(websocket_url=args.websocket_url or 'ws://localhost:8765',
                                   custom_initial_arm_pos=args.initial_arm_pos,
                                   custom_initial_arm_quat=args.initial_arm_quat)
     elif args.keyboard:
@@ -138,12 +148,13 @@ if __name__ == '__main__':
     parser.add_argument('--keyboard', action='store_true', help='启用键盘控制模式（按空格开始/结束 episode，无需手机）')
     parser.add_argument('--joycon', action='store_true', help='启用 Joy-Con 控制模式（左手柄控制底盘，右手柄控制机械臂）')
     parser.add_argument('--joycon-real', action='store_true', help='Use Joy-Con to control real robot via WebSocket')
+    parser.add_argument('--vr-real', action='store_true', help='Use VR (Quest 3) to control real robot via WebSocket')
     parser.add_argument('--save', action='store_true', help='保存演示数据')
     parser.add_argument('--random', action='store_true', help='随机化机器人初始位置 (默认使用XML中的固定位置)')
     parser.add_argument('--output-dir', default='data/0714', help='演示数据输出目录')
     parser.add_argument('--show-images', action='store_true', help='是否显示仿真图像')
-    parser.add_argument('--websocket-url', type=str, default='ws://localhost:8765',
-                        help='WebSocket URL for real robot control (default: ws://localhost:8765)')
+    parser.add_argument('--websocket-url', type=str, default=None,
+                        help='WebSocket URL for real robot control (e.g. ws://192.168.1.220:6060)')
     parser.add_argument('--initial-arm-pos', type=float, nargs=3, required=False,
                         help='Initial arm position [x y z] for real robot (required for --joycon-real)')
     parser.add_argument('--initial-arm-quat', type=float, nargs=4, required=False,

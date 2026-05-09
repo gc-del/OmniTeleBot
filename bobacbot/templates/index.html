@@ -78,13 +78,27 @@
         const rtt = Date.now() - timestamp;
         document.getElementById('info').innerText = rttStats.calculate(rtt);
       });
+
+      // On reconnect: if XR session is already active, re-send episode_started
+      // (happens when server restarts while Quest 3 browser keeps the session alive)
+      socket.on('connect', () => {
+        if (window._xrSessionActive) {
+          console.log('[socket] reconnected, re-sending episode_started');
+          socket.send({ timestamp: Date.now(), state_update: 'episode_started' });
+        }
+      });
     </script>
     <script type="module">
       import { WebXRButton } from '/static/js/webxr-button.js';
 
+      // Quest 3 controller device IDs (derived from the session's deviceId)
+      const rightDeviceId = deviceId + '_R';
+      const leftDeviceId = deviceId + '_L';
+
       // XR globals
       let xrButton = null;
       let xrRefSpace = null;
+      let xrSessionMode = 'immersive-ar';  // default; updated during initXR
 
       // WebGL scene globals
       let gl = null;
@@ -95,138 +109,236 @@
           onPrepareEndSession,
           onEndSession,
           textEnterXRTitle: 'Start episode',
-          textXRNotFoundTitle: 'AR NOT FOUND',
+          textXRNotFoundTitle: 'XR NOT FOUND',
           textPrepareExitXRTitle: 'End episode',
           textExitXRTitle: 'Reset env',
         });
         document.querySelector('header').appendChild(xrButton.domElement);
 
         if (navigator.xr) {
-          navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-            xrButton.enabled = supported;
+          // Try immersive-ar first (phone AR / Quest 3 color passthrough)
+          // Fall back to immersive-vr (Quest 3 VR mode)
+          navigator.xr.isSessionSupported('immersive-ar').then((arSupported) => {
+            if (arSupported) {
+              xrSessionMode = 'immersive-ar';
+              xrButton.enabled = true;
+            } else {
+              return navigator.xr.isSessionSupported('immersive-vr').then((vrSupported) => {
+                if (vrSupported) {
+                  xrSessionMode = 'immersive-vr';
+                  xrButton.enabled = true;
+                }
+              });
+            }
           });
         }
       }
 
       function onRequestSession() {
-        return navigator.xr.requestSession('immersive-ar', {
-          optionalFeatures: ['dom-overlay'],
+        // dom-overlay works for both AR and VR on Quest 3
+        // 'gamepad' ensures controller button/axis access
+        const opts = {
+          optionalFeatures: ['dom-overlay', 'gamepad'],
           domOverlay: { root: document.getElementById('overlay') },
-        }).then((session) => {
+        };
+        return navigator.xr.requestSession(xrSessionMode, opts).then((session) => {
           xrButton.setSession(session);
           session.isImmersive = true;
           onSessionStarted(session);
         });
       }
 
+      // Active input sources (populated via selectstart/selectend events)
+      let armInputSource = null;   // right controller (arm)
+      let baseInputSource = null;  // left controller (base)
+      let touchGripperDelta = 0;   // phone fallback gripper
+
       function onSessionStarted(session) {
+        window._xrSessionActive = true;
         session.addEventListener('end', onSessionEnded);
-        const canvas = document.createElement('canvas');
-        gl = canvas.getContext('webgl', {
-          xrCompatible: true,
+
+        // selectstart/selectend fire for ANY primary action (Trigger on Quest 3, touch on phone)
+        session.addEventListener('selectstart', (ev) => {
+          const src = ev.inputSource;
+          if (src.handedness === 'left') {
+            baseInputSource = src;
+          } else {
+            armInputSource = src;
+          }
         });
-        addCanvasListeners(gl.canvas);
+        session.addEventListener('selectend', (ev) => {
+          if (ev.inputSource === armInputSource)  armInputSource = null;
+          if (ev.inputSource === baseInputSource) baseInputSource = null;
+        });
+
+        const canvas = document.createElement('canvas');
+        gl = canvas.getContext('webgl', { xrCompatible: true });
+
+        // Touch/pointer fallback (phone, or Quest 3 ray cast → synthetic touch)
+        let touchId, touchStartY, touchDeltaY, teleopMode;
+        function handleTouch(touch) {
+          touchDeltaY = (touchStartY - touch.clientY) / (0.2 * window.innerHeight);
+          touchDeltaY = Math.min(1, Math.max(-1, touchDeltaY));
+          touchGripperDelta = touchDeltaY;
+        }
+        canvas.addEventListener('touchstart', (ev) => {
+          if (touchId === undefined) {
+            const t = ev.changedTouches[0];
+            touchId = t.identifier;
+            touchStartY = t.clientY;
+            // Left 90% = arm, right 10% = base
+            teleopMode = t.clientX < 0.9 * window.innerWidth ? 'arm' : 'base';
+            handleTouch(t);
+          }
+        });
+        canvas.addEventListener('touchmove', (ev) => {
+          for (const t of ev.changedTouches) {
+            if (t.identifier === touchId) handleTouch(t);
+          }
+        });
+        function clearTouch(ev) {
+          for (const t of ev.changedTouches) {
+            if (t.identifier === touchId) touchId = undefined;
+          }
+        }
+        canvas.addEventListener('touchend', clearTouch);
+        canvas.addEventListener('touchcancel', clearTouch);
+
         session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
         session.requestReferenceSpace('local').then((refSpace) => {
           xrRefSpace = refSpace;
           session.requestAnimationFrame(onXRFrame);
         });
 
-        // Let the server know user has started the episode
         const data = { timestamp: Date.now(), state_update: 'episode_started' };
         socket.send(data);
+
+        // Expose touch state to frame loop
+        session._teleop = { get touchId() { return touchId; }, get teleopMode() { return teleopMode; }, get touchDeltaY() { return touchDeltaY; } };
       }
 
       function onPrepareEndSession() {
-        // Let the server know user has ended the episode
         const data = { timestamp: Date.now(), state_update: 'episode_ended' };
         socket.send(data);
       }
 
       function onEndSession(session) {
         session.end();
-
-        // Let the server know user is ready for env reset
         const data = { timestamp: Date.now(), state_update: 'reset_env' };
         socket.send(data);
       }
 
       function onSessionEnded(event) {
+        window._xrSessionActive = false;
         xrButton.setSession(null);
         gl = null;
+        armInputSource = null;
+        baseInputSource = null;
       }
 
-      // Touch event handling
-      let touchId; let touchStartY; let touchDeltaY; let teleopMode;
-      function addCanvasListeners(canvas) {
-        function handleTouch(touch) {
-          touchDeltaY = (touchStartY - touch.clientY) / (0.2 * window.innerHeight);
-          touchDeltaY = Math.min(1, Math.max(-1, touchDeltaY));
+      function getPoseTransform(frame, inputSource) {
+        if (inputSource && inputSource.gripSpace) {
+          const p = frame.getPose(inputSource.gripSpace, xrRefSpace);
+          if (p) return p.transform;
         }
+        const vp = frame.getViewerPose(xrRefSpace);
+        return vp ? vp.transform : null;
+      }
 
-        canvas.addEventListener('touchstart', (event) => {
-          if (touchId === undefined) {
-            const touch = event.changedTouches[0];
-            touchId = touch.identifier;
-            touchStartY = touch.clientY;
-            teleopMode = touch.clientX < 0.9 * window.innerWidth ? 'arm' : 'base';
-            handleTouch(touch);
-          }
-        });
-
-        canvas.addEventListener('touchmove', (event) => {
-          for (const touch of event.changedTouches) {
-            if (touchId === touch.identifier) {
-              handleTouch(touch);
-            }
-          }
-        });
-
-        function updateTouchIds(event) {
-          for (const touch of event.changedTouches) {
-            if (touchId === touch.identifier) {
-              touchId = undefined;
-            }
-          }
+      function getControllerButtons(inputSource) {
+        const gamepad = inputSource && inputSource.gamepad;
+        if (!gamepad) {
+          return { a: false, b: false, squeeze: false, thumbstick: false, triggerValue: 0 };
         }
-        canvas.addEventListener('touchend', updateTouchIds);
-        canvas.addEventListener('touchcancel', updateTouchIds);
+        return {
+          a: !!gamepad.buttons[4]?.pressed,
+          b: !!gamepad.buttons[5]?.pressed,
+          squeeze: !!gamepad.buttons[1]?.pressed,
+          thumbstick: !!gamepad.buttons[3]?.pressed,
+          triggerValue: gamepad.buttons[0]?.value ?? 0,
+        };
       }
 
       function onXRFrame(t, frame) {
         frame.session.requestAnimationFrame(onXRFrame);
 
-        // Visualize status of touch control
-        const r = (touchId !== undefined && teleopMode === 'base') ? 0.25 : 0;
-        const b = (touchId !== undefined && teleopMode === 'arm')
-          ? (Math.abs(touchDeltaY) === 1 ? 1 : 0.25 + 0.25 * touchDeltaY)
-          : 0;
-        gl.clearColor(r, 0, b, 0.5);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+        let rColor = 0, bColor = 0;
+        const ts = frame.session._teleop;
+        const numSrc = frame.session.inputSources.length;
 
-        // Send data to server
-        const data = { timestamp: Date.now(), device_id: deviceId };
-        if (touchId !== undefined) {
-          const pose = frame.getViewerPose(xrRefSpace);
-          if (pose) {
-            data.teleop_mode = teleopMode;
-            data.position = {
-              x: pose.transform.inverse.position.x,
-              y: pose.transform.inverse.position.y,
-              z: pose.transform.inverse.position.z,
-            };
-            data.orientation = {
-              x: pose.transform.inverse.orientation.x,
-              y: pose.transform.inverse.orientation.y,
-              z: pose.transform.inverse.orientation.z,
-              w: pose.transform.inverse.orientation.w,
-            };
-          }
-          if (teleopMode === 'arm') {
-            data.gripper_delta = touchDeltaY;
-          }
+        // Determine active control mode:
+        // Priority 1 — XR selectstart events (Quest 3 trigger / phone pinch)
+        // Priority 2 — synthetic touch on canvas (Quest 3 ray → overlay touch)
+        let armOn = armInputSource !== null;
+        let baseOn = baseInputSource !== null;
+        // fallback to touch if no XR events
+        if (!armOn && !baseOn && ts && ts.touchId !== undefined) {
+          armOn  = ts.teleopMode === 'arm';
+          baseOn = ts.teleopMode === 'base';
         }
-        socket.send(data);
+
+        // --- ARM ---
+        if (armOn) {
+          const tf = getPoseTransform(frame, armInputSource);
+          if (tf) {
+            const buttons = getControllerButtons(armInputSource);
+            let gripperDelta = 0;
+            if (armInputSource && armInputSource.gamepad) {
+              const y = -(armInputSource.gamepad.axes[3] ?? armInputSource.gamepad.axes[1] ?? 0);
+              gripperDelta = Math.abs(y) > 0.1 ? y : 0;
+            } else if (ts) {
+              gripperDelta = ts.touchDeltaY || 0;
+            }
+            socket.send({
+              timestamp: Date.now(), device_id: deviceId + '_R',
+              teleop_mode: 'arm', gripper_delta: gripperDelta,
+              gripper_value: buttons.triggerValue,
+              buttons: {
+                a: buttons.a,
+                b: buttons.b,
+                squeeze: buttons.squeeze,
+                thumbstick: buttons.thumbstick,
+              },
+              position:    { x: tf.position.x,    y: tf.position.y,    z: tf.position.z },
+              orientation: { x: tf.orientation.x, y: tf.orientation.y, z: tf.orientation.z, w: tf.orientation.w },
+            });
+            bColor = 0.4;
+          }
+        } else {
+          socket.send({ timestamp: Date.now(), device_id: deviceId + '_R' });
+        }
+
+        // --- BASE ---
+        if (baseOn) {
+          const tf = getPoseTransform(frame, baseInputSource);
+          if (tf) {
+            const buttons = getControllerButtons(baseInputSource);
+            socket.send({
+              timestamp: Date.now(), device_id: leftDeviceId,
+              teleop_mode: 'base',
+              buttons: {
+                a: buttons.a,
+                b: buttons.b,
+                squeeze: buttons.squeeze,
+                thumbstick: buttons.thumbstick,
+              },
+              position:    { x: tf.position.x,    y: tf.position.y,    z: tf.position.z },
+              orientation: { x: tf.orientation.x, y: tf.orientation.y, z: tf.orientation.z, w: tf.orientation.w },
+            });
+            rColor = 0.4;
+          }
+        } else {
+          socket.send({ timestamp: Date.now(), device_id: leftDeviceId });
+        }
+
+        const hint = numSrc > 0
+          ? `${numSrc} XR sources`
+          : '指向屏幕左侧按Trigger控制机械臂\n指向屏幕右侧按Trigger控制底盘';
+        document.getElementById('info').innerText =
+          `${armOn ? '🤖 ARM ON' : 'aim left → arm'} | ${baseOn ? '🚗 BASE ON' : 'aim right → base'}\nright A -> gripper | right B -> recalibrate\n${hint}`;
+
+        gl.clearColor(rColor, 0, bColor, 0.5);
+        gl.clear(gl.COLOR_BUFFER_BIT);
       }
 
       initXR();
