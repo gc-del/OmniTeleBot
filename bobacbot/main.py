@@ -94,9 +94,11 @@ def main(args):
     # Create env
     # For joycon-real mode, always use simulation environment for visualization
     # since the actual control commands are sent via WebSocket from the policy
-    if args.sim or args.joycon_real or args.vr_real:
+    if args.sim or args.joycon_real or args.vr_real or args.xl_vr:
         from mujoco_env import MujocoEnv
-        if args.vr_real:
+        if args.xl_vr:
+            env = MujocoEnv(render_images=False, show_images=args.show_images, randomize_robot_position=args.random)
+        elif args.vr_real:
             env = MujocoEnv(render_images=False, show_images=args.show_images, randomize_robot_position=args.random)
         elif args.teleop:
             env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
@@ -111,7 +113,12 @@ def main(args):
         env = RealEnv()
 
     # Create policy
-    if args.vr_real:
+    if args.xl_vr:
+        from xl_vr_policy import XLVRPolicy
+        if not args.websocket_url:
+            raise ValueError('--websocket-url is REQUIRED for --xl-vr mode')
+        policy = XLVRPolicy(args.websocket_url)
+    elif args.vr_real:
         from vr_real_policy import VRRealPolicy
         if not args.websocket_url:
             raise ValueError('--websocket-url is REQUIRED for --vr-real mode')
@@ -149,6 +156,7 @@ if __name__ == '__main__':
     parser.add_argument('--joycon', action='store_true', help='启用 Joy-Con 控制模式（左手柄控制底盘，右手柄控制机械臂）')
     parser.add_argument('--joycon-real', action='store_true', help='Use Joy-Con to control real robot via WebSocket')
     parser.add_argument('--vr-real', action='store_true', help='Use VR (Quest 3) to control real robot via WebSocket')
+    parser.add_argument('--xl-vr', action='store_true', help='Use XL VR (A-Frame WebXR) to control real robot via WebSocket')
     parser.add_argument('--save', action='store_true', help='保存演示数据')
     parser.add_argument('--random', action='store_true', help='随机化机器人初始位置 (默认使用XML中的固定位置)')
     parser.add_argument('--output-dir', default='data/0714', help='演示数据输出目录')

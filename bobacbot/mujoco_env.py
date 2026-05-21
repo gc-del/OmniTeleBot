@@ -95,7 +95,7 @@ class Renderer:
 
         # 设置渲染上下文
         self.rect = mujoco.MjrRect(0, 0, width, height)  # 渲染矩形区域
-        self.gl_context = mujoco.gl_context.GLContext(width, height)  # OpenGL上下文
+        self.gl_context = mujoco.GLContext(width, height)
         self.gl_context.make_current()
         self.mjr_context = mujoco.MjrContext(model, mujoco.mjtFontScale.mjFONTSCALE_150.value)  # MuJoCo渲染上下文
         mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_OFFSCREEN.value, self.mjr_context)  # 设置离屏缓冲

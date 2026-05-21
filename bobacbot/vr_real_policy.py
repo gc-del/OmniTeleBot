@@ -40,6 +40,7 @@ MAX_POS_STEP       = 0.05      # safety clamp 5cm/step (large, only catches extr
 MAX_ROT_STEP       = 0.08      # safety clamp ~5°/step
 MIN_SEND_DELTA     = 0.001     # don't re-send if target moved < 1mm
 EMA_ALPHA          = 0.5       # light smoothing
+WORKSPACE_RADIUS    = 0.25      # max 25cm from ref — prevents hitting joint limits
 
 # Camera-to-controller offset for iPhone / Quest controller
 DEVICE_CAMERA_OFFSET = np.array([0.0, 0.02, -0.04])
@@ -246,6 +247,13 @@ class VRRealPolicy(Policy):
                             # Smooth
                             tp = EMA_ALPHA * tp + (1.0 - EMA_ALPHA) * _prev_smooth
                             _prev_smooth = tp.copy()
+
+                            # Workspace bubble: never exceed radius from ref
+                            ws_delta = tp - _robot_ref_pos
+                            ws_norm = np.linalg.norm(ws_delta)
+                            if ws_norm > WORKSPACE_RADIUS:
+                                ws_delta *= WORKSPACE_RADIUS / ws_norm
+                                tp = _robot_ref_pos + ws_delta
 
                             # Rotation: same formula
                             rd = rot * _vr_ref_rot_inv

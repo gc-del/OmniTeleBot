@@ -148,8 +148,8 @@ class JoyconRobotics:
                  horizontal_stick_mode: str = "y",
                  close_y: bool = False,
                  limit_dof: bool = False,
-                 glimit: list = [[-0.75, -0.5,  -1.5, -1.57, -1.5, -1.57], 
-                                 [0.750,  0.5,  0.8,  1.57,  1.5,  1.57]],
+                 glimit: list = [[-0.75, -0.75,  -1.5, -3.14, -3.14, -3.14], 
+                                 [0.750,  0.75,  0.8,  3.14,  3.14,  3.14]],
                  offset_position_m: list = [0.0, 0.0, 0.0], # just use the position and yaw
                  offset_euler_rad: list = [0.0, 0.0, 0.0], # adjust the orientation
                  euler_reverse: list = [1, 1, 1], # -1 reverse

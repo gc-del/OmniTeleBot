@@ -22,6 +22,11 @@ pynput==1.8.1
 hidapi==0.15.0
 PyGLM==2.8.3
 
+# VR / Teleoperation (xlevr / telegrip)
+websocket-client==1.8.0
+websockets==12.0
+pyyaml==6.0.2
+
 # Mobile base
 phoenix6
 pygame==2.5.2
