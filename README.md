@@ -170,13 +170,15 @@ data/demos/20241214T153045123456/
 ### 保存数据
 
 ```bash
-python main.py --sim --keyboard --save --output-dir data/demos
+python main.py --sim --keyboard --save --output-dir data/demos(练习场地)
+python main.py --sim --keyboard --save --output-dir data/demos   --scene models/bobacbot_competition_scene.xml   --robot-pos 0.0 -1.5 --robot-yaw 1.57（比赛场地）
 ```
 
 或：
 
 ```bash
-python main.py --sim --joycon --save --output-dir data/demos
+python main.py --sim --joycon --save --output-dir data/demos（练习场地）
+python main.py --sim --joycon --save --output-dir data/demos   --scene models/bobacbot_competition_scene.xml   --robot-pos 0.0 -1.5 --robot-yaw 1.57（比赛场地）
 ```
 
 ### 回放数据
