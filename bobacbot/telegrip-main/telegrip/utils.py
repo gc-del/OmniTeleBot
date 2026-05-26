@@ -109,4 +109,4 @@ def ensure_ssl_certificates(cert_path: str = "cert.pem", key_path: str = "key.pe
         logger.error("openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj \"/C=US/ST=Test/L=Test/O=Test/OU=Test/CN=localhost\"")
         return False
     
-    return True
+    return True 

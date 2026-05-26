@@ -12,4 +12,4 @@ __all__ = [
     "IKSolver", 
     "ForwardKinematics",
     "PyBulletVisualizer",
-]
+] 

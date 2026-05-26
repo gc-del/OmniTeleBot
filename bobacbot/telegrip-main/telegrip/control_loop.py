@@ -47,8 +47,7 @@ class ArmState:
         self.prev_smooth = None            # EMA state for position smoothing
         self.target_quat = None            # Cartesian target quat (for ECO65)
         self.goal_position = None
-        self.origin_position = None
-        self.origin_quat = None            # ref quat at activation (for ECO65)
+        self.origin_quat = None            # ref quat at grip activation (for quat computation)
         self.origin_wrist_roll_angle = 0.0
         self.origin_wrist_flex_angle = 0.0
         self.current_wrist_roll = 0.0
@@ -63,7 +62,6 @@ class ArmState:
         self.prev_smooth = None
         self.target_quat = None
         self.goal_position = None
-        self.origin_position = None
         self.origin_quat = None
         self.origin_wrist_roll_angle = 0.0
         self.origin_wrist_flex_angle = 0.0
@@ -217,7 +215,6 @@ class ControlLoop:
             pos = self.robot_interface.get_current_end_effector_position("left")
             self.arm_state.target_position = pos.copy()
             self.arm_state.goal_position = pos.copy()
-            self.arm_state.origin_position = pos.copy()
             angles = self.robot_interface.get_arm_angles("left")
             self.arm_state.current_wrist_roll = angles[WRIST_ROLL_INDEX]
             self.arm_state.current_wrist_flex = angles[WRIST_FLEX_INDEX]
@@ -323,7 +320,6 @@ class ControlLoop:
                 arm_state.target_position = current_position.copy()
                 arm_state.prev_smooth = current_position.copy()
                 arm_state.goal_position = current_position.copy()
-                arm_state.origin_position = current_position.copy()
                 arm_state.origin_quat = current_quat.copy()
                 arm_state.current_wrist_roll = current_angles[WRIST_ROLL_INDEX]
                 arm_state.current_wrist_flex = current_angles[WRIST_FLEX_INDEX]
@@ -349,7 +345,6 @@ class ControlLoop:
                     arm_state.target_position = current_position.copy()
                     arm_state.prev_smooth = current_position.copy()
                     arm_state.goal_position = current_position.copy()
-                    arm_state.origin_position = current_position.copy()
                     arm_state.origin_quat = current_quat.copy()
                     arm_state.current_wrist_roll = current_angles[WRIST_ROLL_INDEX]
                     arm_state.current_wrist_flex = current_angles[WRIST_FLEX_INDEX]
@@ -366,12 +361,13 @@ class ControlLoop:
                     self.visualizer.hide_frame(f"{goal.arm}_goal_frame")
                 logger.info(f"{goal.arm.upper()}: IDLE")
 
-        # Position: absolute offset from origin, with EMA smoothing
+        # Position: incremental frame-to-frame accumulation, with EMA smoothing
         if goal.target_position is not None and arm_state.mode == ControlMode.POSITION_CONTROL:
             raw_pos = None
             if goal.metadata and goal.metadata.get("relative_position", False):
-                if arm_state.origin_position is not None:
-                    raw_pos = arm_state.origin_position + goal.target_position
+                # Incremental mode: accumulate frame delta onto current target
+                if arm_state.target_position is not None:
+                    raw_pos = arm_state.target_position + goal.target_position
                 elif self.robot_interface:
                     raw_pos = (self.robot_interface.get_current_end_effector_position(goal.arm)
                                + goal.target_position)
@@ -385,9 +381,9 @@ class ControlLoop:
                 arm_state.target_position = raw_pos
                 arm_state.goal_position = raw_pos.copy()
 
-        # Wrist angles with EMA smoothing + limit clamp
+        # Wrist angles: incremental accumulation with EMA smoothing
         if goal.wrist_roll_deg is not None:
-            raw_roll = (arm_state.origin_wrist_roll_angle + goal.wrist_roll_deg
+            raw_roll = (arm_state.current_wrist_roll + goal.wrist_roll_deg
                         if (goal.metadata and goal.metadata.get("relative_position", False))
                         else goal.wrist_roll_deg)
             if arm_state.prev_wrist_roll_smooth is not None:
@@ -396,7 +392,7 @@ class ControlLoop:
             arm_state.prev_wrist_roll_smooth = raw_roll
             arm_state.current_wrist_roll = raw_roll
         if goal.wrist_flex_deg is not None:
-            raw_flex = (arm_state.origin_wrist_flex_angle + goal.wrist_flex_deg
+            raw_flex = (arm_state.current_wrist_flex + goal.wrist_flex_deg
                         if (goal.metadata and goal.metadata.get("relative_position", False))
                         else goal.wrist_flex_deg)
             if arm_state.prev_wrist_flex_smooth is not None:

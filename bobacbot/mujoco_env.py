@@ -271,12 +271,13 @@ class MujocoSim:
     MuJoCo仿真主类
     负责管理整个物理仿真环境，包括模型加载、控制器管理和状态更新
     """
-    def __init__(self, mjcf_path, command_queue, shm_state, show_viewer=True, randomize_robot_position=False):
+    def __init__(self, mjcf_path, command_queue, shm_state, show_viewer=True, randomize_robot_position=False, robot_start_pos=None):
         self.model = mujoco.MjModel.from_xml_path(mjcf_path)    # 从XML文件加载MuJoCo模型
         self.data = mujoco.MjData(self.model)                   # 创建仿真数据结构
         self.command_queue = command_queue                      # 命令队列，用于接收外部控制命令
         self.show_viewer = show_viewer                          # 是否显示可视化窗口
         self.randomize_robot_position = randomize_robot_position  # 是否随机化机器人位置
+        self.robot_start_pos = robot_start_pos                  # 自定义机器人起始位置 (x, y)
         
         # 定义机器人位置随机化范围 (世界坐标系)
         self.robot_position_range = {
@@ -288,9 +289,9 @@ class MujocoSim:
         # 为除物体外的所有物体启用重力补偿
         self.model.body_gravcomp[:] = 1.0
         body_names = {self.model.body(i).name for i in range(self.model.nbody)}
-        for object_name in ['cube']:
-            if object_name in body_names:
-                # 对指定物体禁用重力补偿 (让物体自然下落)
+        for object_name in body_names:
+            # 对场景中的动态物体禁用重力补偿 (让物体自然下落)
+            if object_name.startswith('competition_') or object_name == 'cube':
                 self.model.body_gravcomp[self.model.body(object_name).id] = 0.0
 
         # 缓存数组切片的引用，提高访问效率
@@ -308,7 +309,9 @@ class MujocoSim:
         self.qpos_gripper = self.data.qpos[(base_dofs + arm_dofs):(base_dofs + arm_dofs + 1)]
         ctrl_gripper = self.data.ctrl[(base_dofs + arm_dofs):(base_dofs + arm_dofs + 1)]
         # 立方体相关数组切片 (需要根据实际场景调整偏移量)
-        self.qpos_cube = self.data.qpos[(base_dofs + arm_dofs + 8):(base_dofs + arm_dofs + 8 + 7)]
+        self.qpos_cube = None
+        if 'cube' in body_names:
+            self.qpos_cube = self.data.qpos[(base_dofs + arm_dofs + 8):(base_dofs + arm_dofs + 8 + 7)]
 
         # 创建控制器实例
         self.base_controller = BaseController(self.qpos_base, qvel_base, ctrl_base, self.model.opt.timestep)
@@ -338,7 +341,12 @@ class MujocoSim:
         mujoco.mj_resetData(self.model, self.data)
 
         # 根据选项决定是否随机化机器人位置
-        if self.randomize_robot_position:
+        if self.robot_start_pos is not None:
+            self.qpos_base[0] = self.robot_start_pos[0]
+            self.qpos_base[1] = self.robot_start_pos[1]
+            self.qpos_base[2] = self.robot_start_pos[2] if len(self.robot_start_pos) > 2 else 0.0
+            print(f"机器人自定义位置: x={self.qpos_base[0]:.2f}, y={self.qpos_base[1]:.2f}, yaw={self.qpos_base[2]:.2f}")
+        elif self.randomize_robot_position:
             # 随机化机器人底盘位置和朝向
             self.qpos_base[0] = np.random.uniform(*self.robot_position_range['x'])    # 随机X位置
             self.qpos_base[1] = np.random.uniform(*self.robot_position_range['y'])    # 随机Y位置
@@ -352,18 +360,19 @@ class MujocoSim:
             self.qpos_base[2] = 0.0   # XML中的默认朝向
             print("机器人使用默认位置: x=0.0, y=0.0, yaw=0.0")
 
-        # 随机化立方体位置和朝向
-        self.qpos_cube[:2] += np.random.uniform(-0.1, 0.1, 2)  # 在xy平面上随机偏移
-        theta = np.random.uniform(-math.pi, math.pi)            # 随机旋转角度
-        # 将旋转角度转换为四元数 (绕Z轴旋转)
-        self.qpos_cube[3:7] = np.array([math.cos(theta / 2), 0, 0, math.sin(theta / 2)])
+        # 随机化立方体位置和朝向 (仅在场景包含cube时)
+        if self.qpos_cube is not None:
+            self.qpos_cube[:2] += np.random.uniform(-0.1, 0.1, 2)  # 在xy平面上随机偏移
+            theta = np.random.uniform(-math.pi, math.pi)            # 随机旋转角度
+            # 将旋转角度转换为四元数 (绕Z轴旋转)
+            self.qpos_cube[3:7] = np.array([math.cos(theta / 2), 0, 0, math.sin(theta / 2)])
         
-        # 更新物理状态 
-        mujoco.mj_forward(self.model, self.data)
-
-        # 重置所有控制器 
+        # 重置所有控制器
         self.base_controller.reset()
         self.arm_controller.reset()
+
+        # 更新物理状态（必须在控制器重置之后，否则 site 坐标是旧的）
+        mujoco.mj_forward(self.model, self.data)
 
     def control_callback(self, *_):
         """
@@ -439,14 +448,15 @@ class MujocoEnv:
     MuJoCo环境主类
     提供高级接口来管理整个仿真环境，包括多进程管理、图像渲染和状态观测
     """
-    def __init__(self, render_images=True, show_viewer=True, show_images=False, randomize_robot_position=False):
+    def __init__(self, render_images=True, show_viewer=True, show_images=False, randomize_robot_position=False, mjcf_path=None, robot_start_pos=None):
         # 场景文件路径配置
         # self.mjcf_path = 'models/stanford_tidybot/scene.xml'
-        self.mjcf_path = 'models/bobacbot_demo_scene.xml'
+        self.mjcf_path = mjcf_path or 'models/bobacbot_demo_scene.xml'
         self.render_images = render_images              # 是否渲染图像
         self.show_viewer = show_viewer                  # 是否显示可视化窗口
         self.show_images = show_images                  # 是否显示图像窗口
         self.randomize_robot_position = randomize_robot_position  # 是否随机化机器人位置
+        self.robot_start_pos = robot_start_pos          # 自定义机器人起始位置
         self.command_queue = mp.Queue(1)                # 命令队列，容量为1
 
         # 创建状态观测的共享内存
@@ -471,8 +481,9 @@ class MujocoEnv:
     def physics_loop(self):
         """物理仿真循环 (在独立进程中运行)"""
         # 创建仿真实例
-        sim = MujocoSim(self.mjcf_path, self.command_queue, self.shm_state, 
-                       show_viewer=self.show_viewer, randomize_robot_position=self.randomize_robot_position)
+        sim = MujocoSim(self.mjcf_path, self.command_queue, self.shm_state,
+                       show_viewer=self.show_viewer, randomize_robot_position=self.randomize_robot_position,
+                       robot_start_pos=self.robot_start_pos)
 
         # 启动渲染循环
         if self.render_images:

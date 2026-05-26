@@ -448,4 +448,4 @@ class PyBulletVisualizer:
     @property
     def get_joint_limits(self) -> Tuple[np.ndarray, np.ndarray]:
         """Get joint limits in degrees."""
-        return self.joint_limits_min_deg.copy(), self.joint_limits_max_deg.copy()
+        return self.joint_limits_min_deg.copy(), self.joint_limits_max_deg.copy() 

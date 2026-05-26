@@ -419,6 +419,17 @@ class RobotInterface:
     def get_arm_connection_status(self, arm: str) -> bool:
         return self.is_connected
 
+    def get_current_end_effector_position(self, arm: str) -> np.ndarray:
+        if self.latest_arm_pos is not None:
+            return self.latest_arm_pos.copy()
+        return np.zeros(3)
+
+    def get_current_end_effector_orientation(self):
+        """Return current orientation as scipy Rotation."""
+        if self.latest_arm_quat is not None:
+            return R.from_quat(self.latest_arm_quat)
+        return R.identity()
+
     def get_arm_angles(self, arm: str) -> np.ndarray:
         """Return placeholder joint angles (6-DOF) for compatibility."""
         return np.zeros(6)

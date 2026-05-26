@@ -309,4 +309,4 @@ def update_config_data(new_config: dict):
     save_config(_config_data)
 
 # Global configuration instance
-config = TelegripConfig()
+config = TelegripConfig() 

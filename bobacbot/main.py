@@ -96,18 +96,22 @@ def main(args):
     # since the actual control commands are sent via WebSocket from the policy
     if args.sim or args.joycon_real or args.vr_real or args.xl_vr:
         from mujoco_env import MujocoEnv
+        mjcf_path = args.scene if args.scene else None
+        robot_start_pos = list(args.robot_pos) if args.robot_pos else None
+        if robot_start_pos:
+            robot_start_pos.append(args.robot_yaw)
         if args.xl_vr:
-            env = MujocoEnv(render_images=False, show_images=args.show_images, randomize_robot_position=args.random)
+            env = MujocoEnv(render_images=False, show_images=args.show_images, randomize_robot_position=args.random, mjcf_path=mjcf_path, robot_start_pos=robot_start_pos)
         elif args.vr_real:
-            env = MujocoEnv(render_images=False, show_images=args.show_images, randomize_robot_position=args.random)
+            env = MujocoEnv(render_images=False, show_images=args.show_images, randomize_robot_position=args.random, mjcf_path=mjcf_path, robot_start_pos=robot_start_pos)
         elif args.teleop:
-            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
+            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random, mjcf_path=mjcf_path, robot_start_pos=robot_start_pos)
         elif args.joycon:
-            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
+            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random, mjcf_path=mjcf_path, robot_start_pos=robot_start_pos)
         elif args.joycon_real:
-            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
+            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random, mjcf_path=mjcf_path, robot_start_pos=robot_start_pos)
         else:
-            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random)
+            env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random, mjcf_path=mjcf_path, robot_start_pos=robot_start_pos)
     else:
         from real_env import RealEnv
         env = RealEnv()
@@ -159,6 +163,12 @@ if __name__ == '__main__':
     parser.add_argument('--xl-vr', action='store_true', help='Use XL VR (A-Frame WebXR) to control real robot via WebSocket')
     parser.add_argument('--save', action='store_true', help='保存演示数据')
     parser.add_argument('--random', action='store_true', help='随机化机器人初始位置 (默认使用XML中的固定位置)')
+    parser.add_argument('--scene', type=str, default=None,
+                        help='自定义场景XML文件路径 (例如: models/bobacbot_competition_scene.xml)')
+    parser.add_argument('--robot-pos', type=float, nargs=2, default=None,
+                        help='机器人起始位置 [x y] (例如: --robot-pos 1.0 0.0)')
+    parser.add_argument('--robot-yaw', type=float, default=0.0,
+                        help='机器人起始朝向 (弧度, 逆时针为正)')
     parser.add_argument('--output-dir', default='data/0714', help='演示数据输出目录')
     parser.add_argument('--show-images', action='store_true', help='是否显示仿真图像')
     parser.add_argument('--websocket-url', type=str, default=None,

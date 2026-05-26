@@ -50,4 +50,4 @@ class BaseInputProvider(ABC):
             await self.command_queue.put(goal)
         except Exception as e:
             # Handle queue full or other errors
-            pass
+            pass 

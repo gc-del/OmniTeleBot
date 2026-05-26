@@ -364,4 +364,4 @@ def compute_relative_position(current_vr_pos: dict, origin_vr_pos: dict, scale: 
         'y': current_vr_pos['y'] - origin_vr_pos['y'], 
         'z': current_vr_pos['z'] - origin_vr_pos['z']
     }
-    return vr_to_robot_coordinates(delta_vr, scale)
+    return vr_to_robot_coordinates(delta_vr, scale) 

@@ -215,8 +215,14 @@ class KeyboardRemotePolicy(Policy):
     # ---------------------------
     def _integrate(self, dt):
 
-        # base integrate
-        self.base_target_pose += self.base_vel * dt
+        # base integrate — WASD in ROBOT local frame, converted to world
+        yaw = self.base_target_pose[2]
+        c, s = np.cos(yaw), np.sin(yaw)
+        world_dx = self.base_vel[0] * c - self.base_vel[1] * s
+        world_dy = self.base_vel[0] * s + self.base_vel[1] * c
+        self.base_target_pose[0] += world_dx * dt
+        self.base_target_pose[1] += world_dy * dt
+        self.base_target_pose[2] += self.base_vel[2] * dt
 
         # arm position
         self.arm_target_pos += self.arm_lin_vel * dt

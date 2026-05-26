@@ -15,44 +15,42 @@ from scipy.spatial.transform import Rotation as R
 
 from .base import BaseInputProvider, ControlGoal, ControlMode
 from ..config import TelegripConfig
-from ..core.kinematics import compute_relative_position
+from ..core.kinematics import vr_to_robot_coordinates
 
 logger = logging.getLogger(__name__)
 
 
 class VRControllerState:
     """State tracking for a VR controller."""
-    
+
     def __init__(self, hand: str):
         self.hand = hand
         self.grip_active = False
         self.trigger_active = False
-        
-        # Position tracking for relative movement
-        self.origin_position = None
-        self.origin_rotation = None
-        
+
+        # Position tracking for incremental frame-to-frame movement
+        self.last_vr_position = None
+
         # Quaternion-based rotation tracking (more stable than Euler)
         self.origin_quaternion = None
-        self.accumulated_rotation_quat = None  # Accumulated rotation as quaternion
-        
-        # Rotation tracking for wrist control
+        self.last_rotation_quat = None  # Previous frame's rotation quat
+
+        # Rotation tracking for wrist control (frame-to-frame deltas)
         self.z_axis_rotation = 0.0  # For wrist_roll
         self.x_axis_rotation = 0.0  # For wrist_flex (pitch)
-        
+
         # Position tracking
         self.current_position = None
-        
+
         # Rotation tracking
         self.origin_wrist_angle = 0.0
-    
+
     def reset_grip(self):
         """Reset grip state but preserve trigger state."""
         self.grip_active = False
-        self.origin_position = None
-        self.origin_rotation = None
+        self.last_vr_position = None
         self.origin_quaternion = None
-        self.accumulated_rotation_quat = None
+        self.last_rotation_quat = None
         self.z_axis_rotation = 0.0
         self.x_axis_rotation = 0.0
 
@@ -69,7 +67,11 @@ class VRWebSocketServer(BaseInputProvider):
         # Controller states
         self.left_controller = VRControllerState("left")
         self.right_controller = VRControllerState("right")
-        
+
+        # Headset (HMD) state for dynamic coordinate alignment
+        self.headset_position = None
+        self.headset_quaternion = None
+
         # Robot state tracking (for relative position calculation)
         self.left_arm_origin_position = None
         self.right_arm_origin_position = None
@@ -210,24 +212,34 @@ class VRWebSocketServer(BaseInputProvider):
     
     async def process_controller_data(self, data: Dict):
         """Process incoming VR controller data."""
-        
+
+        # Parse headset (HMD) data for dynamic coordinate alignment
+        headset = data.get('headset')
+        if headset:
+            hq = headset.get('quaternion')
+            if hq and all(k in hq for k in ['x', 'y', 'z', 'w']):
+                self.headset_quaternion = np.array([hq['x'], hq['y'], hq['z'], hq['w']])
+            hp = headset.get('position')
+            if hp and all(k in hp for k in ['x', 'y', 'z']):
+                self.headset_position = np.array([hp['x'], hp['y'], hp['z']])
+
         # Handle new dual controller format
         if 'leftController' in data and 'rightController' in data:
             left_data = data['leftController']
             right_data = data['rightController']
-            
+
             # Process left controller
             if left_data.get('position') and (left_data.get('gripActive', False) or left_data.get('trigger', 0) > 0.5):
                 await self.process_single_controller('left', left_data)
             elif not left_data.get('gripActive', False) and self.left_controller.grip_active:
                 await self.handle_grip_release('left')
-            
+
             # Process right controller
             if right_data.get('position') and (right_data.get('gripActive', False) or right_data.get('trigger', 0) > 0.5):
                 await self.process_single_controller('right', right_data)
             elif not right_data.get('gripActive', False) and self.right_controller.grip_active:
                 await self.handle_grip_release('right')
-                
+
             return
         
         # Handle legacy single controller format
@@ -274,23 +286,20 @@ class VRWebSocketServer(BaseInputProvider):
         # Handle grip button for arm movement control
         if grip_active:
             if not controller.grip_active:
-                # Grip just activated - set origin and reset target position
+                # Grip just activated - record initial positions and reset target
                 controller.grip_active = True
-                controller.origin_position = position.copy()
-                
+                controller.last_vr_position = position.copy()
+
                 # Use quaternion data directly if available, otherwise fall back to Euler conversion
                 if quaternion and all(k in quaternion for k in ['x', 'y', 'z', 'w']):
-                    controller.origin_quaternion = np.array([quaternion['x'], quaternion['y'], quaternion['z'], quaternion['w']])
-                    controller.origin_rotation = controller.origin_quaternion  # Store for compatibility
+                    current_quat = np.array([quaternion['x'], quaternion['y'], quaternion['z'], quaternion['w']])
                 else:
-                    # Fallback to Euler angle conversion
-                    controller.origin_quaternion = self.euler_to_quaternion(rotation) if rotation else None
-                    controller.origin_rotation = controller.origin_quaternion
-                
-                controller.accumulated_rotation_quat = controller.origin_quaternion
+                    current_quat = self.euler_to_quaternion(rotation) if rotation else None
+                controller.origin_quaternion = current_quat
+                controller.last_rotation_quat = current_quat
                 controller.z_axis_rotation = 0.0
                 controller.x_axis_rotation = 0.0
-                
+
                 # Send reset signal to control loop to reset target position to current robot position
                 reset_goal = ControlGoal(
                     arm=hand,
@@ -302,32 +311,48 @@ class VRWebSocketServer(BaseInputProvider):
                     }
                 )
                 await self.send_goal(reset_goal)
-                
+
                 logger.info(f"🔒 {hand.upper()} grip activated - controlling {hand} arm (target reset to current position)")
-            
-            # Compute target position
-            if controller.origin_position:
-                relative_delta = compute_relative_position(
-                    position, 
-                    controller.origin_position, 
-                    self.config.vr_to_robot_scale
-                )
-                
-                # Calculate Z-axis rotation for wrist_roll control
-                # Calculate X-axis rotation for wrist_flex control
-                if controller.origin_quaternion is not None:
-                    # Update quaternion-based rotation tracking
+
+            # Compute frame-to-frame position delta
+            if controller.last_vr_position:
+                frame_delta_world = {
+                    'x': position['x'] - controller.last_vr_position['x'],
+                    'y': position['y'] - controller.last_vr_position['y'],
+                    'z': position['z'] - controller.last_vr_position['z']
+                }
+
+                # Transform delta from world-space to headset-local space
+                # so "push away from face" always = same robot direction
+                if self.headset_quaternion is not None:
+                    headset_rot = R.from_quat(self.headset_quaternion)
+                    delta_world_vec = [frame_delta_world['x'], frame_delta_world['y'], frame_delta_world['z']]
+                    delta_local = headset_rot.inv().apply(delta_world_vec)
+                    frame_delta_local = {'x': delta_local[0], 'y': delta_local[1], 'z': delta_local[2]}
+                else:
+                    frame_delta_local = frame_delta_world
+
+                robot_delta = vr_to_robot_coordinates(frame_delta_local, self.config.vr_to_robot_scale)
+                controller.last_vr_position = position.copy()
+
+                # Calculate frame-to-frame rotation deltas for wrist control
+                if controller.last_rotation_quat is not None:
                     if quaternion and all(k in quaternion for k in ['x', 'y', 'z', 'w']):
-                        # Use quaternion data directly
                         current_quat = np.array([quaternion['x'], quaternion['y'], quaternion['z'], quaternion['w']])
-                        self.update_quaternion_rotation_direct(controller, current_quat)
+                    elif rotation:
+                        current_quat = self.euler_to_quaternion(rotation)
                     else:
-                        # Fallback to Euler angle conversion
-                        self.update_quaternion_rotation(controller, rotation)
-                    
-                    # Get accumulated rotations from quaternion
-                    controller.z_axis_rotation = self.extract_roll_from_quaternion(controller.accumulated_rotation_quat, controller.origin_quaternion)
-                    controller.x_axis_rotation = self.extract_pitch_from_quaternion(controller.accumulated_rotation_quat, controller.origin_quaternion)
+                        current_quat = None
+
+                    if current_quat is not None:
+                        # Compute frame-to-frame rotation delta quaternion
+                        last_rot = R.from_quat(controller.last_rotation_quat)
+                        current_rot = R.from_quat(current_quat)
+                        delta_quat = (current_rot * last_rot.inv()).as_quat()
+
+                        controller.z_axis_rotation = self.extract_roll_from_delta_quat(delta_quat)
+                        controller.x_axis_rotation = self.extract_pitch_from_delta_quat(delta_quat)
+                        controller.last_rotation_quat = current_quat
 
                 # Full relative quaternion in ROBOT coordinates (no axis-projection loss).
                 # Convert absolute quaternions WebXR→robot BEFORE computing relative.
@@ -335,11 +360,11 @@ class VRWebSocketServer(BaseInputProvider):
                 # Quaternion mapping: [x,y,z,w] → [-z,-x,y,w]
                 rel_quat_robot = None
                 if (controller.origin_quaternion is not None and
-                    controller.accumulated_rotation_quat is not None):
+                    controller.last_rotation_quat is not None):
                     def _wxr_to_robot(q):
                         return [-q[2], -q[0], q[1], q[3]]
                     origin_r = _wxr_to_robot(controller.origin_quaternion)
-                    current_r = _wxr_to_robot(controller.accumulated_rotation_quat)
+                    current_r = _wxr_to_robot(controller.last_rotation_quat)
                     origin_rot = R.from_quat(origin_r)
                     current_rot = R.from_quat(current_r)
                     rel_quat_robot = (current_rot * origin_rot.inv()).as_quat().tolist()
@@ -348,13 +373,12 @@ class VRWebSocketServer(BaseInputProvider):
                 goal = ControlGoal(
                     arm=hand,
                     mode=ControlMode.POSITION_CONTROL,
-                    target_position=relative_delta,  # Relative position delta
+                    target_position=robot_delta,  # Frame-to-frame position delta
                     wrist_roll_deg=-controller.z_axis_rotation,
                     wrist_flex_deg=-controller.x_axis_rotation,
                     metadata={
                         "source": "vr_grip",
                         "relative_position": True,
-                        "origin_position": controller.origin_position.copy(),
                         "rel_quat_robot": rel_quat_robot,  # full quat, robot coords
                     }
                 )
@@ -405,69 +429,24 @@ class VRWebSocketServer(BaseInputProvider):
         rotation = R.from_euler('xyz', euler_rad)
         return rotation.as_quat()
     
-    def update_quaternion_rotation(self, controller: VRControllerState, current_euler: dict):
-        """Update quaternion-based rotation tracking."""
-        if not current_euler:
-            return
-        
-        # Convert current Euler to quaternion
-        current_quat = self.euler_to_quaternion(current_euler)
-        
-        # Store current quaternion for accumulated rotation calculation
-        controller.accumulated_rotation_quat = current_quat
-    
-    def update_quaternion_rotation_direct(self, controller: VRControllerState, current_quat: np.ndarray):
-        """Update quaternion-based rotation tracking using quaternion data directly."""
-        if current_quat is None:
-            return
-        
-        # Store current quaternion for accumulated rotation calculation
-        controller.accumulated_rotation_quat = current_quat
-    
-    def extract_roll_from_quaternion(self, current_quat: np.ndarray, origin_quat: np.ndarray) -> float:
-        """Extract roll rotation around Z-axis from relative quaternion rotation."""
-        if current_quat is None or origin_quat is None:
+    def extract_roll_from_delta_quat(self, delta_quat: np.ndarray) -> float:
+        """Extract roll rotation around Z-axis from a delta quaternion."""
+        if delta_quat is None:
             return 0.0
-        
         try:
-            # Calculate relative rotation quaternion (from origin to current)
-            origin_rotation = R.from_quat(origin_quat)
-            current_rotation = R.from_quat(current_quat)
-            relative_rotation = current_rotation * origin_rotation.inv()
-            
-            # Project the relative rotation onto the Z-axis (roll)
-            # Get the rotation vector (axis-angle representation)
-            rotvec = relative_rotation.as_rotvec()
-            
-            # The Z-component of the rotation vector represents rotation around Z-axis (roll)
-            z_rotation_rad = rotvec[2]
-            z_rotation_deg = -np.degrees(z_rotation_rad)
-            
-            return z_rotation_deg
+            rotvec = R.from_quat(delta_quat).as_rotvec()
+            return -np.degrees(rotvec[2])
         except Exception as e:
-            logger.warning(f"Error extracting roll from quaternion: {e}")
+            logger.warning(f"Error extracting roll from delta quaternion: {e}")
             return 0.0
-    
-    def extract_pitch_from_quaternion(self, current_quat: np.ndarray, origin_quat: np.ndarray) -> float:
-        """Extract pitch rotation around X-axis from relative quaternion rotation."""
-        if current_quat is None or origin_quat is None:
+
+    def extract_pitch_from_delta_quat(self, delta_quat: np.ndarray) -> float:
+        """Extract pitch rotation around X-axis from a delta quaternion."""
+        if delta_quat is None:
             return 0.0
-        
         try:
-            # Calculate relative rotation quaternion (from origin to current)
-            origin_rotation = R.from_quat(origin_quat)
-            current_rotation = R.from_quat(current_quat)
-            relative_rotation = current_rotation * origin_rotation.inv()
-            
-            # Project the relative rotation onto the X-axis (pitch)
-            # Get the rotation vector (axis-angle representation)
-            rotvec = relative_rotation.as_rotvec()
-            
-            # The X-component of the rotation vector represents rotation around X-axis (pitch)
-            x_rotation_rad = rotvec[0]
-            x_rotation_deg = np.degrees(x_rotation_rad)
-            
-            return x_rotation_deg
+            rotvec = R.from_quat(delta_quat).as_rotvec()
+            return np.degrees(rotvec[0])
         except Exception as e:
-            logger.warning(f"Error extracting pitch from quaternion: {e}")
-            return 0.0
+            logger.warning(f"Error extracting pitch from delta quaternion: {e}")
+            return 0.0 
