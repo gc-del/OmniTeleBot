@@ -21,15 +21,16 @@
     <mesh name="competition_trash1"   file="competition/具身陪伴场地 - 垃圾桶-1.STL"   scale="0.001 0.001 0.001"/>
     <mesh name="competition_trash2"   file="competition/具身陪伴场地 - 垃圾桶-2.STL"   scale="0.001 0.001 0.001"/>
     <mesh name="competition_part1"    file="competition/具身陪伴场地 - 零件1-1.STL"    scale="0.001 0.001 0.001"/>
-    <mesh name="competition_milk"     file="competition/具身陪伴场地 - 牛奶盒-1.STL"   scale="0.001 0.001 0.001"/>
-    <mesh name="competition_bottle"   file="competition/具身陪伴场地 - 瓶子-1.STL"     scale="0.001 0.001 0.001"/>
-    <mesh name="competition_apple"    file="competition/具身陪伴场地 - 苹果-1.STL"     scale="0.001 0.001 0.001"/>
-    <mesh name="competition_block1"   file="competition/具身陪伴场地 - 物块1-1.STL"    scale="0.001 0.001 0.001"/>
-    <mesh name="competition_block2_1" file="competition/具身陪伴场地 - 物块2-1.STL"    scale="0.001 0.001 0.001"/>
-    <mesh name="competition_block2_2" file="competition/具身陪伴场地 - 物块2-2.STL"    scale="0.001 0.001 0.001"/>
-    <mesh name="competition_block2_3" file="competition/具身陪伴场地 - 物块2-3.STL"    scale="0.001 0.001 0.001"/>
-    <mesh name="competition_block2_4" file="competition/具身陪伴场地 - 物块2-4.STL"    scale="0.001 0.001 0.001"/>
-    <mesh name="competition_block2_5" file="competition/具身陪伴场地 - 物块2-5.STL"    scale="0.001 0.001 0.001"/>
+    <!-- Converted meshes: Z-up, meters (no scale/euler needed) -->
+    <mesh name="competition_milk"     file="competition_converted/具身陪伴场地 - 牛奶盒-1.STL"/>
+    <mesh name="competition_bottle"   file="competition_converted/具身陪伴场地 - 瓶子-1.STL"/>
+    <mesh name="competition_apple"    file="competition_converted/具身陪伴场地 - 苹果-1.STL"/>
+    <mesh name="competition_block1"   file="competition_converted/具身陪伴场地 - 物块1-1.STL"/>
+    <mesh name="competition_block2_1" file="competition_converted/具身陪伴场地 - 物块2-1.STL"/>
+    <mesh name="competition_block2_2" file="competition_converted/具身陪伴场地 - 物块2-2.STL"/>
+    <mesh name="competition_block2_3" file="competition_converted/具身陪伴场地 - 物块2-3.STL"/>
+    <mesh name="competition_block2_4" file="competition_converted/具身陪伴场地 - 物块2-4.STL"/>
+    <mesh name="competition_block2_5" file="competition_converted/具身陪伴场地 - 物块2-5.STL"/>
   </asset>
 
   <worldbody>
@@ -56,16 +57,12 @@
     </body>
     <body name="competition_table1" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
       <geom name="table1_geom" type="mesh" mesh="competition_table1" rgba="0.95 0.95 0.95 1"/>
-      <geom name="table1_col" type="box" size="0.20 0.005 0.20" pos="1.565 0.819 1.807" rgba="0 0 0 0" contype="1" conaffinity="1"/>
     </body>
     <body name="competition_table2" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
       <geom name="table2_geom" type="mesh" mesh="competition_table2" rgba="0.95 0.95 0.95 1"/>
-      <geom name="table2_col" type="box" size="0.20 0.005 0.20" pos="1.78 0.819 0.511" rgba="0 0 0 0" contype="1" conaffinity="1"/>
     </body>
     <body name="competition_cabinet" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
       <geom name="cabinet_geom" type="mesh" mesh="competition_part1" rgba="0.6 0.55 0.45 1"/>
-      <!-- collision at cabinet top: CAD pos (X=0.71, Y=1.019, Z=0.145) -->
-      <geom name="cabinet_col" type="box" size="0.36 0.005 0.105" pos="0.71 1.019 0.145" rgba="0 0 0 0" contype="1" conaffinity="1"/>
     </body>
     <body name="competition_trash1" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
       <geom name="trash1_geom" type="mesh" mesh="competition_trash1" rgba="0.25 0.25 0.25 1"/>
@@ -76,41 +73,39 @@
 
     <body name="competition_milk" pos="-0.795 1.376 0.66">
       <freejoint/>
-      <geom type="box" size="0.023 0.025 0.060" rgba="0.95 0.95 0.95 1" mass="0.08" friction="0.6 0.3 0.001"/>
+      <geom type="box" size="0.023 0.025 0.060" rgba="0.95 0.95 0.95 1" mass="0.08" friction="0.8 0.5 0.001"/>
     </body>
     <body name="competition_bottle" pos="-0.625 1.40 0.66">
       <freejoint/>
-      <geom type="cylinder" size="0.02 0.038" rgba="0.2 0.7 0.3 1" mass="0.08"
-            friction="0.8 0.8 0.001" solref="0.01 1" solimp="0.95 0.95 0.01" condim="4"/>
+      <geom type="cylinder" size="0.02 0.038" rgba="0.2 0.7 0.3 1" mass="0.08" friction="0.8 0.5 0.001"/>
     </body>
     <body name="competition_apple" pos="-1.003 1.407 0.63">
       <freejoint/>
-      <geom type="sphere" size="0.018" rgba="0.9 0.15 0.15 1" mass="0.04"
-            friction="0.8 0.8 0.001" solref="0.01 1" solimp="0.95 0.95 0.01" condim="4"/>
+      <geom type="box" size="0.015 0.015 0.015" rgba="0.9 0.15 0.15 1" mass="0.04" friction="0.8 0.5 0.001"/>
     </body>
     <body name="competition_block1" pos="-0.915 1.393 0.63">
       <freejoint/>
-      <geom type="box" size="0.02 0.02 0.02" rgba="0.9 0.15 0.15 1" mass="0.04" friction="0.6 0.3 0.001"/>
+      <geom type="box" size="0.02 0.02 0.02" rgba="0.9 0.15 0.15 1" mass="0.04" friction="0.8 0.5 0.001"/>
     </body>
     <body name="competition_block2_1" pos="0.019 -0.255 0.44">
       <freejoint/>
-      <geom type="box" size="0.024 0.028 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.6 0.3 0.001"/>
+      <geom type="box" size="0.024 0.028 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.8 0.5 0.001"/>
     </body>
     <body name="competition_block2_2" pos="-0.031 -0.178 0.44">
       <freejoint/>
-      <geom type="box" size="0.026 0.028 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.6 0.3 0.001"/>
+      <geom type="box" size="0.026 0.028 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.8 0.5 0.001"/>
     </body>
     <body name="competition_block2_3" pos="0.097 -0.162 0.44">
       <freejoint/>
-      <geom type="box" size="0.028 0.026 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.6 0.3 0.001"/>
+      <geom type="box" size="0.028 0.026 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.8 0.5 0.001"/>
     </body>
     <body name="competition_block2_4" pos="-0.094 -0.351 0.44">
       <freejoint/>
-      <geom type="box" size="0.022 0.028 0.025" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.6 0.3 0.001"/>
+      <geom type="box" size="0.022 0.028 0.025" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.8 0.5 0.001"/>
     </body>
     <body name="competition_block2_5" pos="0.063 -0.334 0.44">
       <freejoint/>
-      <geom type="box" size="0.025 0.028 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.6 0.3 0.001"/>
+      <geom type="box" size="0.025 0.028 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.8 0.5 0.001"/>
     </body>
   </worldbody>
 </mujoco>
