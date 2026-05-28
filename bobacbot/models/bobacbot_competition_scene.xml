@@ -21,16 +21,7 @@
     <mesh name="competition_trash1"   file="competition/具身陪伴场地 - 垃圾桶-1.STL"   scale="0.001 0.001 0.001"/>
     <mesh name="competition_trash2"   file="competition/具身陪伴场地 - 垃圾桶-2.STL"   scale="0.001 0.001 0.001"/>
     <mesh name="competition_part1"    file="competition/具身陪伴场地 - 零件1-1.STL"    scale="0.001 0.001 0.001"/>
-    <!-- Converted meshes: Z-up, meters (no scale/euler needed) -->
-    <mesh name="competition_milk"     file="competition_converted/具身陪伴场地 - 牛奶盒-1.STL"/>
-    <mesh name="competition_bottle"   file="competition_converted/具身陪伴场地 - 瓶子-1.STL"/>
-    <mesh name="competition_apple"    file="competition_converted/具身陪伴场地 - 苹果-1.STL"/>
-    <mesh name="competition_block1"   file="competition_converted/具身陪伴场地 - 物块1-1.STL"/>
-    <mesh name="competition_block2_1" file="competition_converted/具身陪伴场地 - 物块2-1.STL"/>
-    <mesh name="competition_block2_2" file="competition_converted/具身陪伴场地 - 物块2-2.STL"/>
-    <mesh name="competition_block2_3" file="competition_converted/具身陪伴场地 - 物块2-3.STL"/>
-    <mesh name="competition_block2_4" file="competition_converted/具身陪伴场地 - 物块2-4.STL"/>
-    <mesh name="competition_block2_5" file="competition_converted/具身陪伴场地 - 物块2-5.STL"/>
+    <!-- Dynamic objects use simple shapes only (box/cylinder/sphere), no STL meshes -->
   </asset>
 
   <worldbody>
