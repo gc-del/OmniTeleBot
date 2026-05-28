@@ -35,25 +35,35 @@
   <worldbody>
     <light pos="0 0 1.5" directional="true"/>
 
-    <!-- Flat floor plane for robot (like demo scene) -->
     <geom name="floor" type="plane" size="0 0 0.05" rgba="0.6 0.6 0.6 1"/>
 
-    <!-- Static scene: Y-up(CAD) -> Z-up(MuJoCo), common offset to center field -->
-    <!-- All visual-only (contype=0) to avoid interfering with robot arm -->
     <body name="competition_field" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
       <geom name="field_geom" type="mesh" mesh="competition_field" rgba="0.7 0.7 0.7 1" contype="0" conaffinity="0"/>
+      <geom name="wall_bottom" type="box" size="1.53 0.20 0.01" pos="1.55 0.649 0.01" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="wall_right"  type="box" size="0.01 0.20 1.53" pos="3.08 0.649 1.54" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="wall_top_r"  type="box" size="0.515 0.20 0.01" pos="2.565 0.649 3.07" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="wall_top_l"  type="box" size="0.515 0.20 0.01" pos="0.535 0.649 3.07" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="wall_left"   type="box" size="0.01 0.20 1.53" pos="0.02 0.649 1.54" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <!-- Notch walls -->
+      <geom name="wall_notch_r" type="box" size="0.01 0.20 0.015" pos="2.05 0.649 3.055" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="wall_notch_l" type="box" size="0.01 0.20 0.015" pos="1.05 0.649 3.055" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <!-- Inner walls -->
+      <geom name="wall_in_bot"  type="box" size="0.74 0.20 0.01" pos="0.792 0.649 0.04" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="wall_in_bot2" type="box" size="0.74 0.20 0.01" pos="2.308 0.649 0.04" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="wall_in_top"  type="box" size="0.50 0.20 0.01" pos="0.55 0.649 3.04" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="wall_in_vl"   type="box" size="0.01 0.20 0.47" pos="1.535 0.649 0.508" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="wall_in_vr"   type="box" size="0.01 0.20 0.47" pos="1.565 0.649 0.523" rgba="0 0 0 0" contype="1" conaffinity="1"/>
     </body>
     <body name="competition_table1" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="table1_geom" type="mesh" mesh="competition_table1" rgba="0.95 0.95 0.95 1" contype="0" conaffinity="0"/>
-      <!-- collision at table top: CAD pos (X, Y=top, Z), size (half-X, half-Y=thin, half-Z) -->
+      <geom name="table1_geom" type="mesh" mesh="competition_table1" rgba="0.95 0.95 0.95 1"/>
       <geom name="table1_col" type="box" size="0.20 0.005 0.20" pos="1.565 0.819 1.807" rgba="0 0 0 0" contype="1" conaffinity="1"/>
     </body>
     <body name="competition_table2" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="table2_geom" type="mesh" mesh="competition_table2" rgba="0.95 0.95 0.95 1" contype="0" conaffinity="0"/>
+      <geom name="table2_geom" type="mesh" mesh="competition_table2" rgba="0.95 0.95 0.95 1"/>
       <geom name="table2_col" type="box" size="0.20 0.005 0.20" pos="1.78 0.819 0.511" rgba="0 0 0 0" contype="1" conaffinity="1"/>
     </body>
     <body name="competition_cabinet" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="cabinet_geom" type="mesh" mesh="competition_part1" rgba="0.6 0.55 0.45 1" contype="0" conaffinity="0"/>
+      <geom name="cabinet_geom" type="mesh" mesh="competition_part1" rgba="0.6 0.55 0.45 1"/>
       <!-- collision at cabinet top: CAD pos (X=0.71, Y=1.019, Z=0.145) -->
       <geom name="cabinet_col" type="box" size="0.36 0.005 0.105" pos="0.71 1.019 0.145" rgba="0 0 0 0" contype="1" conaffinity="1"/>
     </body>
@@ -64,19 +74,19 @@
       <geom name="trash2_geom" type="mesh" mesh="competition_trash2" rgba="0.25 0.25 0.25 1"/>
     </body>
 
-    <!-- Dynamic objects: world pos from CAD + common transform, euler on body for Y-up->Z-up -->
-    <!-- Dynamic objects: simple shapes for reliable collision + visibility -->
     <body name="competition_milk" pos="-0.795 1.376 0.66">
       <freejoint/>
       <geom type="box" size="0.023 0.025 0.060" rgba="0.95 0.95 0.95 1" mass="0.08" friction="0.6 0.3 0.001"/>
     </body>
     <body name="competition_bottle" pos="-0.625 1.40 0.66">
       <freejoint/>
-      <geom type="cylinder" size="0.02 0.038" rgba="0.2 0.7 0.3 1" mass="0.06" friction="0.6 0.3 0.001"/>
+      <geom type="cylinder" size="0.02 0.038" rgba="0.2 0.7 0.3 1" mass="0.08"
+            friction="0.8 0.8 0.001" solref="0.01 1" solimp="0.95 0.95 0.01" condim="4"/>
     </body>
     <body name="competition_apple" pos="-1.003 1.407 0.63">
       <freejoint/>
-      <geom type="sphere" size="0.018" rgba="0.9 0.15 0.15 1" mass="0.03" friction="0.6 0.3 0.001"/>
+      <geom type="sphere" size="0.018" rgba="0.9 0.15 0.15 1" mass="0.04"
+            friction="0.8 0.8 0.001" solref="0.01 1" solimp="0.95 0.95 0.01" condim="4"/>
     </body>
     <body name="competition_block1" pos="-0.915 1.393 0.63">
       <freejoint/>
