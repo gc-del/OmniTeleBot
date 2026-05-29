@@ -1,0 +1,3 @@
+[submodule "bobacbot/teleimager"]
+	path = bobacbot/teleimager
+	url = https://gitee.com/reinovo/teleimager.git
