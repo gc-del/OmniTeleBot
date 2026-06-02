@@ -57,27 +57,27 @@
       <geom name="cabinet_geom" type="mesh" mesh="competition_part1" rgba="0.6 0.55 0.45 1" contype="0" conaffinity="0"/>
     </body>
     <body name="competition_cabinet" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <!-- Outer shell: left, right, bottom, top, back panels (10mm thick walls) -->
-      <geom name="cabinet_wall_l"  type="box" pos="0.350 0.734 0.145" size="0.005 0.285 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_wall_r"  type="box" pos="1.070 0.734 0.145" size="0.005 0.285 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_wall_bot" type="box" pos="0.710 0.449 0.145" size="0.360 0.005 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_wall_top" type="box" pos="0.710 1.019 0.145" size="0.360 0.005 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_back"      type="box" pos="0.710 0.734 0.040" size="0.360 0.285 0.005" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Inner left/right walls (recessed 10mm from outer) -->
+      <!-- Outer shell panels, each 10mm thick. Position = center of outer and inner faces -->
+      <!-- Y: outer=[0.449,1.019], inner=[0.459,1.009]; X: outer=[0.350,1.070], inner=[0.360,1.060]; Z: outer=[0.040,0.250], inner=[0.050,0.250] -->
+      <geom name="cabinet_wall_l"   type="box" pos="0.355 0.734 0.145" size="0.005 0.285 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="cabinet_wall_r"   type="box" pos="1.065 0.734 0.145" size="0.005 0.285 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="cabinet_wall_bot" type="box" pos="0.710 0.454 0.145" size="0.360 0.005 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="cabinet_wall_top" type="box" pos="0.710 1.014 0.145" size="0.360 0.005 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="cabinet_back"     type="box" pos="0.710 0.734 0.045" size="0.360 0.285 0.005" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <!-- Inner left/right walls at recessed faces -->
       <geom name="cabinet_inner_l" type="box" pos="0.360 0.734 0.150" size="0.003 0.275 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
       <geom name="cabinet_inner_r" type="box" pos="1.060 0.734 0.150" size="0.003 0.275 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Middle shelf dividing top and bottom levels (Y = 0.899~0.909, 10mm thick) -->
+      <!-- Middle shelf: Y faces at 0.899(bottom) and 0.909(top), 10mm thick -->
       <geom name="cabinet_shelf_mid" type="box" pos="0.710 0.904 0.150" size="0.350 0.005 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Center dividers in top level (Y = 0.909~1.009), dividing into 3 small compartments -->
-      <geom name="cabinet_div_1"     type="box" pos="0.600 0.959 0.150" size="0.005 0.050 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_div_2"     type="box" pos="0.820 0.959 0.150" size="0.005 0.050 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Front frame at Z=0.250 (edges around the opening, so robot can reach into compartments) -->
-      <geom name="cabinet_front_top" type="box" pos="0.710 1.014 0.247" size="0.340 0.005 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_front_bot" type="box" pos="0.710 0.454 0.247" size="0.340 0.005 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_front_l"   type="box" pos="0.355 0.734 0.247" size="0.005 0.280 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_front_r"   type="box" pos="1.065 0.734 0.247" size="0.005 0.280 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Middle shelf front edge at Z=0.250 -->
-      <geom name="cabinet_front_shelf" type="box" pos="0.710 0.904 0.247" size="0.340 0.003 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <!-- Top-level center dividers: only in Y=[0.909,1.009], each 10mm thick -->
+      <geom name="cabinet_div_1" type="box" pos="0.600 0.959 0.150" size="0.005 0.050 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="cabinet_div_2" type="box" pos="0.820 0.959 0.150" size="0.005 0.050 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <!-- Front frame at Z=0.250: edges at outer faces forming the front opening -->
+      <geom name="cabinet_front_top"   type="box" pos="0.710 1.019 0.250" size="0.350 0.003 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="cabinet_front_bot"   type="box" pos="0.710 0.449 0.250" size="0.350 0.003 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="cabinet_front_l"     type="box" pos="0.350 0.734 0.250" size="0.003 0.285 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="cabinet_front_r"     type="box" pos="1.070 0.734 0.250" size="0.003 0.285 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <geom name="cabinet_front_shelf" type="box" pos="0.710 0.904 0.250" size="0.350 0.003 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
     </body>
     <!-- Trash can 1: visual-only body + collision body -->
     <body name="competition_trash1_vis" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
@@ -102,19 +102,19 @@
       <geom name="trash2_bottom"  type="box" pos="2.879 0.572 1.795" size="0.09 0.09 0.002" rgba="0 0 0 0" contype="1" conaffinity="1"/>
     </body>
 
-    <body name="competition_milk" pos="-0.795 1.376 0.66">
+    <body name="competition_milk" pos="-0.795 1.376 0.63">
       <freejoint/>
       <geom type="box" size="0.023 0.025 0.060" rgba="0.95 0.95 0.95 1" mass="0.08" friction="0.8 0.5 0.001"/>
     </body>
-    <body name="competition_bottle" pos="-0.625 1.40 0.66">
+    <body name="competition_bottle" pos="-0.625 1.40 0.61">
       <freejoint/>
       <geom type="cylinder" size="0.02 0.038" rgba="0.2 0.7 0.3 1" mass="0.08" friction="0.8 0.5 0.001"/>
     </body>
-    <body name="competition_apple" pos="-1.003 1.407 0.63">
+    <body name="competition_apple" pos="-1.003 1.407 0.58">
       <freejoint/>
       <geom type="box" size="0.015 0.015 0.015" rgba="0.9 0.15 0.15 1" mass="0.04" friction="0.8 0.5 0.001"/>
     </body>
-    <body name="competition_block1" pos="-0.915 1.393 0.63">
+    <body name="competition_block1" pos="-0.915 1.393 0.59">
       <freejoint/>
       <geom type="box" size="0.02 0.02 0.02" rgba="0.9 0.15 0.15 1" mass="0.04" friction="0.8 0.5 0.001"/>
     </body>
