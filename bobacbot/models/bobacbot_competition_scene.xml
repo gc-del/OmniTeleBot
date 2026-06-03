@@ -84,7 +84,7 @@
       <geom name="trash1_geom" type="mesh" mesh="competition_trash1" rgba="0.25 0.25 0.25 1" contype="0" conaffinity="0"/>
     </body>
     <body name="competition_trash1" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="trash1_wall_f" type="box" pos="2.837 0.662 0.285" size="0.09 0.002 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <!-- Trash can: 3 side walls (left, right, bottom edge) + bottom panel. TOP is open -->
       <geom name="trash1_wall_b" type="box" pos="2.837 0.482 0.285" size="0.09 0.002 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
       <geom name="trash1_wall_r" type="box" pos="2.927 0.572 0.285" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
       <geom name="trash1_wall_l" type="box" pos="2.747 0.572 0.285" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
@@ -95,7 +95,7 @@
       <geom name="trash2_geom" type="mesh" mesh="competition_trash2" rgba="0.25 0.25 0.25 1" contype="0" conaffinity="0"/>
     </body>
     <body name="competition_trash2" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="trash2_wall_f" type="box" pos="2.879 0.662 1.898" size="0.09 0.002 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+      <!-- Trash can: 3 side walls (left, right, bottom edge) + bottom panel. TOP is open -->
       <geom name="trash2_wall_b" type="box" pos="2.879 0.482 1.898" size="0.09 0.002 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
       <geom name="trash2_wall_r" type="box" pos="2.969 0.572 1.898" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
       <geom name="trash2_wall_l" type="box" pos="2.789 0.572 1.898" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
