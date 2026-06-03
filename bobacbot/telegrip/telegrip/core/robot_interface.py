@@ -104,6 +104,9 @@ class RobotInterface:
         # Latest robot state (from WS feedback)
         self.latest_arm_pos: Optional[np.ndarray] = None   # [x, y, z]
         self.latest_arm_quat: Optional[np.ndarray] = None  # [x, y, z, w]
+        self.latest_base_pos: Optional[np.ndarray] = None  # [x, y, z]
+        self.latest_base_quat: Optional[np.ndarray] = None # [x, y, z, w]
+        self.latest_gripper_pct: float = 0.0               # 0-100
 
         # Commanded targets (Cartesian)
         self.left_target_pos: Optional[np.ndarray] = None
@@ -132,6 +135,7 @@ class RobotInterface:
         # Base (chassis) control
         self.base_vx = 0.0
         self.base_vy = 0.0
+        self.base_wz = 0.0
         self.base_active = False
 
         # ── Joint angle state (for PyBullet IK / visualization) ──
@@ -320,17 +324,22 @@ class RobotInterface:
         self.is_engaged = False
         self.base_vx = 0.0
         self.base_vy = 0.0
+        self.base_wz = 0.0
         self.base_active = False
         logger.info("Robot motors DISENGAGED")
         return True
 
     # ── Base control ──────────────────────────────────────
 
-    def set_base_velocity(self, vx: float, vy: float):
-        """Set base (chassis) velocity command."""
+    def set_base_velocity(self, vx: float, vy: float, v_wz: float = 0.0):
+        """Set base (chassis) velocity command.
+
+        vx, vy: linear (m/s), v_wz: angular around Z (rad/s)
+        """
         self.base_vx = vx
         self.base_vy = vy
-        self.base_active = (abs(vx) > 1e-6 or abs(vy) > 1e-6)
+        self.base_wz = v_wz
+        self.base_active = (abs(vx) > 1e-6 or abs(vy) > 1e-6 or abs(v_wz) > 1e-6)
 
     def _send_base(self) -> bool:
         """Send base velocity command to ECO65 (Protocol v2.0.1)."""
@@ -338,7 +347,7 @@ class RobotInterface:
             from .protocol_v2 import ProtocolV2Helper
             self._protocol = ProtocolV2Helper(command_prefix="cmd_base")
         linear = np.array([self.base_vx, self.base_vy, 0.0])
-        angular = np.array([0.0, 0.0, 0.0])
+        angular = np.array([0.0, 0.0, self.base_wz])
         cmd = self._protocol.base_command_twist(linear, angular, timeout_ms=300)
         return self.ws.send(cmd)
 
@@ -405,25 +414,25 @@ class RobotInterface:
         return self.ws.send(cmd)
 
     def _update_state(self):
-        """Update latest robot state from WS feedback.
-        Supports both v2.0.1 (arm.ee_pose) and legacy (arm_state) formats.
-        """
+        """Update latest robot state from WS feedback (v2.0.1 robot_state)."""
         if self.ws and self.ws.latest_state:
             st = self.ws.latest_state
-            # v2.0.1 format: type=robot_state, arm.ee_pose
+            # Arm state
             if "arm" in st and "ee_pose" in st.get("arm", {}):
                 ee = st["arm"]["ee_pose"]
                 p = ee["position"]
                 q = ee["orientation"]
                 self.latest_arm_pos = np.array([p["x"], p["y"], p["z"]])
                 self.latest_arm_quat = np.array([q["x"], q["y"], q["z"], q["w"]])
-                return
-            # Legacy format
-            if "arm_state" in st:
-                p = st["arm_state"]["pose"]["position"]
-                q = st["arm_state"]["pose"]["orientation"]
-                self.latest_arm_pos = np.array([p["x"], p["y"], p["z"]])
-                self.latest_arm_quat = np.array([q["x"], q["y"], q["z"], q["w"]])
+            # Base state
+            if "base" in st and "pose" in st.get("base", {}):
+                bp = st["base"]["pose"]["position"]
+                bo = st["base"]["pose"]["orientation"]
+                self.latest_base_pos = np.array([bp["x"], bp["y"], bp["z"]])
+                self.latest_base_quat = np.array([bo["x"], bo["y"], bo["z"], bo["w"]])
+            # Gripper state
+            if "gripper" in st and "position_pct" in st.get("gripper", {}):
+                self.latest_gripper_pct = float(st["gripper"]["position_pct"])
 
     # ── Arm control helpers ───────────────────────────────
 

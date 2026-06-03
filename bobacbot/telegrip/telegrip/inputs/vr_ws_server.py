@@ -208,7 +208,26 @@ class VRWebSocketServer(BaseInputProvider):
             # Handle grip releases when client disconnects
             await self.handle_grip_release('left')
             await self.handle_grip_release('right')
-            logger.info(f"VR client {client_address} cleanup complete")
+
+    async def _send_base_velocity_from_thumbstick(self, ts_x: float, ts_y: float,
+                                                    z_rot: float = 0.0):
+        """Send base velocity from thumbstick + Z-rotation of controller.
+
+        ts_x, ts_y: thumbstick [-1, 1], x=strafe, y=forward
+        z_rot:  controller Z-axis rotation delta (radians), → angular velocity
+        """
+        MAX_LINEAR = 0.3    # m/s
+        MAX_ANGULAR = 0.5  # rad/s
+        vx = ts_y * MAX_LINEAR
+        vy = -ts_x * MAX_LINEAR
+        v_wz = np.clip(z_rot, -MAX_ANGULAR, MAX_ANGULAR)
+
+        goal = ControlGoal(
+            arm="left",
+            target_position=np.array([vx, vy, v_wz]),
+            metadata={"thumbstick_direct": True}
+        )
+        await self.send_goal(goal)
     
     async def process_controller_data(self, data: Dict):
         """Process incoming VR controller data."""
@@ -228,11 +247,38 @@ class VRWebSocketServer(BaseInputProvider):
             left_data = data['leftController']
             right_data = data['rightController']
 
-            # Process left controller
-            if left_data.get('position') and (left_data.get('gripActive', False) or left_data.get('trigger', 0) > 0.5):
-                await self.process_single_controller('left', left_data)
-            elif not left_data.get('gripActive', False) and self.left_controller.grip_active:
-                await self.handle_grip_release('left')
+            # Process left controller: thumbstick → base, trigger/grip → linear turn
+            left_ts = left_data.get('thumbstick', {})
+            left_ts_x = left_ts.get('x', 0) if isinstance(left_ts, dict) else 0
+            left_ts_y = left_ts.get('y', 0) if isinstance(left_ts, dict) else 0
+            left_trigger = left_data.get('trigger', 0)
+            left_grip = left_data.get('gripActive', False)
+            left_grip_val = left_data.get('gripValue', 0.0)  # 0..1 analog
+
+            # Turning: trigger → left, grip → right, both proportional
+            MAX_TURN = 0.5  # rad/s at full press
+            left_turn = 0.0
+            if left_trigger > 0.01 and not left_grip:
+                left_turn = left_trigger * MAX_TURN       # trigger → left
+            elif left_grip and left_trigger < 0.01:
+                # Grip analog range is typically 0.5~1.0, remap to 0.0~1.0
+                grip_mapped = max(0.0, (left_grip_val - 0.5) / 0.5)
+                left_turn = -grip_mapped * MAX_TURN       # grip → right
+
+            left_has_input = abs(left_ts_x) > 0.1 or abs(left_ts_y) > 0.1 or abs(left_turn) > 0.01
+
+            if left_has_input:
+                await self._send_base_velocity_from_thumbstick(left_ts_x, left_ts_y, left_turn)
+                self.left_controller._ts_was_active = True
+            else:
+                if getattr(self.left_controller, '_ts_was_active', False):
+                    await self._send_base_velocity_from_thumbstick(0.0, 0.0, 0.0)
+                self.left_controller._ts_was_active = False
+                # grip handling (arm control) — only if not used for turning
+                if left_data.get('position') and (left_grip and left_trigger > 0.5):
+                    await self.process_single_controller('left', left_data)
+                elif not left_grip and self.left_controller.grip_active:
+                    await self.handle_grip_release('left')
 
             # Process right controller
             if right_data.get('position') and (right_data.get('gripActive', False) or right_data.get('trigger', 0) > 0.5):

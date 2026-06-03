@@ -390,6 +390,36 @@ AFRAME.registerComponent('controller-updater', {
     // Update controller text if controllers are visible
     if (!this.leftHand || !this.rightHand) return; // Added safety check
 
+    // Read left thumbstick axes from tracked-controls component
+    let leftThumbstick = { x: 0, y: 0 };
+    // Try to get analog trigger value via XR input sources
+    if (this.leftHand.components['tracked-controls']) {
+      const tc = this.leftHand.components['tracked-controls'];
+      if (tc && tc.axis) {
+        leftThumbstick.x = (tc.axis[2] !== undefined ? tc.axis[2] : 0);
+        leftThumbstick.y = (tc.axis[3] !== undefined ? -tc.axis[3] : 0);
+      }
+    }
+
+    // Read analog trigger & grip values from WebXR gamepad
+    let leftTriggerAnalog = this.leftTriggerDown ? 1.0 : 0.0;
+    let leftGripAnalog = this.leftGripDown ? 1.0 : 0.0;
+    try {
+      const session = this.el.sceneEl?.renderer?.xr?.getSession?.();
+      if (session && session.inputSources) {
+        for (const src of session.inputSources) {
+          if (src.handedness === 'left' && src.gamepad) {
+            leftTriggerAnalog = src.gamepad.buttons[0]?.value ?? (this.leftTriggerDown ? 1.0 : 0.0);
+            leftGripAnalog = src.gamepad.buttons[1]?.value ?? (this.leftGripDown ? 1.0 : 0.0);
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      leftTriggerAnalog = this.leftTriggerDown ? 1.0 : 0.0;
+      leftGripAnalog = this.leftGripDown ? 1.0 : 0.0;
+    }
+
     // --- BEGIN DETAILED LOGGING ---
     if (this.leftHand.object3D) {
       // console.log(`Left Hand Raw - Visible: ${this.leftHand.object3D.visible}, Pos: ${this.leftHand.object3D.position.x.toFixed(2)},${this.leftHand.object3D.position.y.toFixed(2)},${this.leftHand.object3D.position.z.toFixed(2)}`);
@@ -405,7 +435,9 @@ AFRAME.registerComponent('controller-updater', {
         position: null,
         rotation: null,
         gripActive: false,
-        trigger: 0
+        gripValue: 0,
+        trigger: 0,
+        thumbstick: { x: 0, y: 0 }
     };
     
     const rightController = {
@@ -463,8 +495,10 @@ AFRAME.registerComponent('controller-updater', {
           z: this.leftHand.object3D.quaternion.z, 
           w: this.leftHand.object3D.quaternion.w 
         };
-        leftController.trigger = this.leftTriggerDown ? 1 : 0;
+        leftController.trigger = leftTriggerAnalog;   // 0..1 analog
         leftController.gripActive = this.leftGripDown;
+        leftController.gripValue = leftGripAnalog;     // 0..1 analog
+        leftController.thumbstick = leftThumbstick;
     }
 
     // Update Right Hand Text & Collect Data

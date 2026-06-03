@@ -4,6 +4,7 @@
 import argparse
 import time
 from itertools import count
+import cv2 as cv
 from constants import POLICY_CONTROL_PERIOD
 from episode_storage import EpisodeWriter
 from policies import TeleopPolicy, RemotePolicy
@@ -90,7 +91,42 @@ def run_episode(env, policy, writer=None):
         # Wait for writer to finish saving to disk
         writer.wait_for_flush()
 
+def _run_telegrip_vr(args):
+    """Launch telegrip-based VR teleop with episode recording."""
+    from pathlib import Path
+    import sys as _sys
+
+    _telegrip_root = Path(__file__).resolve().parent / "telegrip"
+    if str(_telegrip_root) not in _sys.path:
+        _sys.path.insert(0, str(_telegrip_root))
+
+    from telegrip_adapter import TelegripAdapter
+
+    # Build camera topics for image recording
+    cam_topics = {}
+    if getattr(args, 'hand_cam_port', 0) > 0:
+        cam_topics["hand_camera"] = args.hand_cam_port
+    if getattr(args, 'base_cam_port', 0) > 0:
+        cam_topics["base_camera"] = args.base_cam_port
+
+    adapter = TelegripAdapter(
+        ws_url=args.websocket_url or "ws://192.168.1.220:6060",
+        output_dir=args.output_dir,
+        save=args.save,
+        log_level="info",
+        image_host=getattr(args, 'image_host', '127.0.0.1'),
+        cam_topics=cam_topics if cam_topics else None,
+    )
+    adapter.run()
+
+
 def main(args):
+    # ── telegrip-based VR real mode ──────────────────────
+    if args.vr_real and not args.sim:
+        _run_telegrip_vr(args)
+        return
+
+    # ── legacy modes ─────────────────────────────────────
     # Create env
     # For joycon-real mode, always use simulation environment for visualization
     # since the actual control commands are sent via WebSocket from the policy
@@ -177,4 +213,10 @@ if __name__ == '__main__':
                         help='Initial arm position [x y z] for real robot (required for --joycon-real)')
     parser.add_argument('--initial-arm-quat', type=float, nargs=4, required=False,
                         help='Initial arm quaternion [x y z w] for real robot (required for --joycon-real)')
+    parser.add_argument('--image-host', type=str, default='127.0.0.1',
+                        help='Teleimager image server IP (used with --vr-real --save)')
+    parser.add_argument('--hand-cam-port', type=int, default=0,
+                        help='ZMQ port for hand_camera, 0 to disable (used with --vr-real --save)')
+    parser.add_argument('--base-cam-port', type=int, default=0,
+                        help='ZMQ port for base_camera, 0 to disable (used with --vr-real --save)')
     main(parser.parse_args())

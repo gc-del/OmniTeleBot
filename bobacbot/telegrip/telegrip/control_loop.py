@@ -434,7 +434,19 @@ class ControlLoop:
 
     def _execute_base_goal(self, goal: ControlGoal):
         """Handle left-controller goals → base (chassis) velocity control."""
-        trig = (goal.metadata or {}).get("trigger", 0)
+        meta = goal.metadata or {}
+
+        # Thumbstick → direct velocity [vx, vy, v_wz]
+        if meta.get("thumbstick_direct") and goal.target_position is not None:
+            vx = float(goal.target_position[0])
+            vy = float(goal.target_position[1])
+            v_wz = float(goal.target_position[2]) if len(goal.target_position) >= 3 else 0.0
+            self.robot_interface.set_base_velocity(vx, vy, v_wz)
+            self.base_state.active = True
+            return
+
+        # Trigger + position delta → velocity
+        trig = meta.get("trigger", 0)
         base_active = trig > 0.5
 
         if base_active and goal.target_position is not None:

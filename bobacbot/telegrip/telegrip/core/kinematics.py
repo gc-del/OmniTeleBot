@@ -351,8 +351,8 @@ def vr_to_robot_coordinates(vr_pos: dict, scale: float = 1.0) -> np.ndarray:
     Robot coordinate system: X=forward, Y=left, Z=up
     """
     return np.array([
-        -vr_pos['x'] * scale,   # VR +Z (back) -> Robot +X (forward)
-        vr_pos['z'] * scale,    # VR +X (right) -> Robot -Y (right) 
+        -vr_pos['z'] * scale,   # VR +Z (back) -> Robot +X (forward)
+        -vr_pos['x'] * scale,    # VR +X (right) -> Robot -Y (right) 
         vr_pos['y'] * scale     # VR +Y (up) -> Robot +Z (up)
     ])
 
