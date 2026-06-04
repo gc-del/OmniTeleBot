@@ -343,12 +343,12 @@ class RobotInterface:
 
     def _send_base(self) -> bool:
         """Send base velocity command to ECO65 (Protocol v2.0.1)."""
-        if self._protocol is None:
+        if not hasattr(self, '_base_protocol') or self._base_protocol is None:
             from .protocol_v2 import ProtocolV2Helper
-            self._protocol = ProtocolV2Helper(command_prefix="cmd_base")
+            self._base_protocol = ProtocolV2Helper(command_prefix="cmd_base")
         linear = np.array([self.base_vx, self.base_vy, 0.0])
         angular = np.array([0.0, 0.0, self.base_wz])
-        cmd = self._protocol.base_command_twist(linear, angular, timeout_ms=300)
+        cmd = self._base_protocol.base_command_twist(linear, angular, timeout_ms=300)
         return self.ws.send(cmd)
 
     # ── Core send ─────────────────────────────────────────
@@ -449,11 +449,10 @@ class RobotInterface:
         """Set gripper and immediately send command."""
         val = 0 if closed else 100
         self.left_gripper = val
-        # Send standalone gripper command (Protocol v2.0.1)
-        if self._protocol is None:
+        if not hasattr(self, '_gripper_protocol') or self._gripper_protocol is None:
             from .protocol_v2 import ProtocolV2Helper
-            self._protocol = ProtocolV2Helper(command_prefix="cmd_gripper")
-        cmd = self._protocol.gripper_command(val, timeout_ms=500)
+            self._gripper_protocol = ProtocolV2Helper(command_prefix="cmd_gripper")
+        cmd = self._gripper_protocol.gripper_command(val, timeout_ms=500)
         if self.ws and self.ws.connected and self.is_engaged:
             self.ws.send(cmd)
 

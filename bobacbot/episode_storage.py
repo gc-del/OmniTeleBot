@@ -162,7 +162,9 @@ class EpisodeWriter:
                 np_arr = np.frombuffer(jpg_bytes, dtype=np.uint8)
                 bgr = cv.imdecode(np_arr, cv.IMREAD_COLOR)
                 if bgr is not None:
-                    bgr_frames.append(bgr)
+                    # imdecode returns BGR, convert to RGB for write_frames_to_mp4
+                    rgb = cv.cvtColor(bgr, cv.COLOR_BGR2RGB)
+                    bgr_frames.append(rgb)
             if bgr_frames:
                 mp4_path = self.episode_dir / f'{cam_name}.mp4'
                 write_frames_to_mp4(bgr_frames, mp4_path, fps=self.record_fps)

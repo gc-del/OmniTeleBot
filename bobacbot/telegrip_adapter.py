@@ -185,21 +185,24 @@ class RecordingControlLoop(ControlLoop):
             obs["base_image"] = None   # base_camera mp4
             obs["wrist_image"] = None  # hand_camera mp4
 
-            # Build action dict — actual executed robot state (from odometry feedback)
+            # Build action dict — VR-commanded targets (not feedback!)
             action: dict = {}
+            arm = self.arm_state
+            # arm target: VR grip position → Cartesian goal
+            action["arm_pos"] = arm.target_position.copy() if arm.target_position is not None else np.zeros(3, dtype=np.float64)
+            action["arm_quat"] = arm.target_quat.copy() if arm.target_quat is not None else np.array([0., 0., 0., 1.], dtype=np.float64)
+            # gripper: commanded open/close
+            action["gripper_pos"] = np.array([ri.left_gripper / 100.0 if ri else 0], dtype=np.float64)
+            # base: commanded velocity → integrate to pose (approximate)
             if ri is not None:
-                # base_pose: actual odometry
                 if ri.latest_base_pos is not None and ri.latest_base_quat is not None:
                     from scipy.spatial.transform import Rotation as _R2
                     _yaw_a = _R2.from_quat(ri.latest_base_quat).as_euler('xyz')[2]
                     action["base_pose"] = np.array([ri.latest_base_pos[0], ri.latest_base_pos[1], _yaw_a], dtype=np.float64)
                 else:
                     action["base_pose"] = np.zeros(3, dtype=np.float64)
-                # arm_pos / arm_quat: actual end-effector pose from feedback
-                action["arm_pos"] = ri.latest_arm_pos.copy() if ri.latest_arm_pos is not None else np.zeros(3, dtype=np.float64)
-                action["arm_quat"] = ri.latest_arm_quat.copy() if ri.latest_arm_quat is not None else np.array([0., 0., 0., 1.], dtype=np.float64)
-                # gripper_pos: actual gripper position from feedback
-                action["gripper_pos"] = np.array([ri.latest_gripper_pct / 100.0], dtype=np.float64)
+            else:
+                action["base_pose"] = np.zeros(3, dtype=np.float64)
 
             # Collect images from ZMQ subscriber (store as named keys matching spec image names)
             # base_camera → base_image, hand_camera → wrist_image
