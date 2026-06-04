@@ -113,7 +113,14 @@ python main.py --sim --joycon
 
 ## 遥操作模式
 
-### 键盘控制
+### 键盘控制 --- 仿真
+
+```bash
+# 键盘控制 + 数据采集（比赛场景）
+python main.py --sim --keyboard --save --output-dir data/demos \
+    --scene models/bobacbot_competition_scene.xml \
+    --robot-pos 0.0 -1.5 --robot-yaw 1.57
+```
 
 键盘控制适合调试和采集基础数据。
 
@@ -132,7 +139,15 @@ python main.py --sim --joycon
 
 空格键用于 episode 开始 / 结束 / 重置流程。
 
-### Joy-Con 控制
+### Joy-Con 控制 --- 仿真
+
+```bash
+# Joy-Con 控制 + 数据采集 + 图像显示（比赛场景）
+python main.py --sim --joycon --save --output-dir data/demos \
+    --scene models/bobacbot_competition_scene.xml \
+    --robot-pos 0.0 -1.5 --robot-yaw 1.57 --show-images
+```
+
 
 Joy-Con 模式分工如下：
 
@@ -145,6 +160,55 @@ Joy-Con 模式分工如下：
 - 后 3 个量：姿态 `roll / pitch / yaw`
 
 当前工程里，机械臂控制最终会被转换成末端位姿目标，再交给 IK 求解整条机械臂关节解。
+
+### Joy-Con 控制 --- 实物
+
+```bash
+# Joy-Con 控制真实机器人
+python main.py --joycon-real --websocket-url ws://192.168.1.204:6060
+```
+
+Joy-Con 模式分工如下：
+
+- 左手柄：控制底盘
+- 右手柄：控制机械臂和夹爪
+
+右手柄输出遵循官方 Joy-Con 控制链路的位姿约定：
+
+- 前 3 个量：位置 `x / y / z`
+- 后 3 个量：姿态 `roll / pitch / yaw`
+
+当前工程里，机械臂控制最终会被转换成末端位姿目标，再交给 IK 求解整条机械臂关节解。
+
+### Meta Quest3 控制 --- 实物
+
+VR 遥操作，使用 Meta Quest 3 浏览器连接控制。
+
+```bash
+# 启动 VR 遥操作 + 数据采集
+python main.py --vr-real \
+    --save \
+    --output-dir data/episodes \
+    --websocket-url ws://192.168.1.220:6060 \
+    --image-host 192.168.1.220 \
+    --hand-cam-port 55555 \
+    --base-cam-port 55556
+```
+
+Quest 3 打开 `https://<服务器IP>:8443`，点击 **Enter VR** 进入控制。
+按空格键开始/停止录制，终端提示 `y/n` 保存。
+
+| 左手柄 | 功能 |
+|--------|------|
+| 摇杆 Y/X | 底盘前后/平移 |
+| trigger（扳机） | 底盘左转（线性调速） |
+| grip（握持） | 底盘右转 |
+
+| 右手柄 | 功能 |
+|--------|------|
+| grip + 移动 | 机械臂位姿控制 |
+| trigger | 夹爪闭合 |
+
 
 
 ## 数据采集
@@ -298,33 +362,68 @@ ssh -L 5555:localhost:5555 <gpu-machine>
 ## 项目结构
 
 ```text
-Bobacbot/
-├── arm_controller.py
-├── arm_server.py
-├── base_controller.py
-├── base_server.py
-├── cameras.py
-├── constants.py
-├── convert_to_robomimic_hdf5.py
-├── episode_storage.py
-├── ik_solver.py
-├── joycon_policy.py
-├── keyboard_policy.py
-├── main.py
-├── mujoco_env.py
-├── policies.py
-├── policy_server.py
-├── replay_episodes.py
-├── real_env.py
-├── requirements.txt
+bobac3bot/
+├── LICENSE
 ├── README.md
-├── README_CN.md
-├── data/
-├── docs/
-├── models/
-├── bobac3_description/
-├── joycon-robotics-master/
-└── training/
+├── requirements.txt
+├── bobacbot/                         # 主代码目录
+│   ├── main.py                       # 入口脚本
+│   ├── constants.py                  # 常量定义
+│   ├── policies.py                   # 策略基类
+│   ├── episode_storage.py            # Episode 数据存储
+│   ├── ik_solver.py                  # 逆运动学求解器
+│   ├── policy_server.py              # 策略推理服务器
+│   ├── plot_demos.ipynb              # 演示数据可视化
+│   ├── diffusion-policy.patch        # Diffusion Policy 补丁
+│   ├── kinova/                       # Kinova 真实机器人控制
+│   │   ├── arm_controller.py         #   机械臂低层控制
+│   │   ├── arm_server.py             #   机械臂服务端
+│   │   ├── base_controller.py        #   底盘低层控制
+│   │   ├── base_server.py            #   底盘服务端
+│   │   ├── cameras.py                #   相机驱动
+│   │   ├── real_env.py               #   真实环境封装
+│   │   ├── vr_real_policy.py         #   VR 真实机器人策略
+│   │   └── xl_vr_policy.py           #   XL VR 策略
+│   ├── sim/                          # 仿真模块
+│   │   ├── mujoco_env.py             #   MuJoCo 仿真环境
+│   │   ├── replay_episodes.py        #   Episode 回放
+│   │   ├── convert_to_robomimic_hdf5.py  #   数据格式转换
+│   │   └── plot_base_state.py        #   底盘状态可视化
+│   ├── keyboard/                     # 键盘控制策略
+│   │   └── keyboard_policy.py
+│   ├── joycon/                       # Joy-Con 手柄控制
+│   │   ├── joycon_policy.py          #   仿真 Joy-Con 策略
+│   │   └── joycon_real_policy.py     #   真实 Joy-Con 策略
+│   ├── joyconrobotics/               # Joy-Con 底层驱动库
+│   ├── telegrip/                     # Telegrip VR 遥操作子系统
+│   │   ├── telegrip_adapter.py       #   bobacbot 适配器
+│   │   ├── telegrip/                 #   telegrip 核心包
+│   │   │   ├── main.py               #     系统主控
+│   │   │   ├── config.py             #     配置管理
+│   │   │   ├── control_loop.py       #     控制循环
+│   │   │   ├── core/                 #     核心模块（运动学、协议、机器人接口）
+│   │   │   ├── inputs/               #     输入模块（VR WS、键盘、基类）
+│   │   │   └── utils.py              #     工具函数
+│   │   ├── web-ui/                   #   Web 前端界面
+│   │   └── URDF/                     #   机器人 URDF 模型
+│   ├── models/                       # MuJoCo 模型与场景
+│   │   ├── bobacbot.xml              #   基础场景
+│   │   ├── bobacbot_competition_scene.xml  #   比赛场景
+│   │   ├── bobacbot_demo_scene.xml   #   演示场景
+│   │   ├── bobac3/                   #   Bobac3 底盘
+│   │   ├── eco65b/                   #   eco65b 机械臂
+│   │   ├── 2f85/                     #   2F-85 夹爪
+│   │   ├── gen72/                    #   Gen72 机械臂
+│   │   ├── kinova_gen3/              #   Kinova Gen3
+│   │   ├── competition/              #   比赛场地 STL
+│   │   ├── assets/                   #   模型资源
+│   │   └── textures/                 #   纹理贴图
+│   ├── data/                         # 采集数据目录
+│   │   └── episodes/                 #   Episode 数据
+│   ├── docs/                         # 文档
+│   ├── static/                       # 静态资源（WebXR）
+│   └── assets/                       # 资源文件
+└── memories/                         # 记忆/笔记
 ```
 
 ## 常用命令
