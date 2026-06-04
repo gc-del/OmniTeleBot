@@ -8,7 +8,7 @@ import numpy as np
 from pynput import keyboard
 from scipy.spatial.transform import Rotation as R
 
-from constants import POLICY_CONTROL_PERIOD
+from ..constants import POLICY_CONTROL_PERIOD
 from policies import Policy
 
 from joyconrobotics import JoyconRobotics

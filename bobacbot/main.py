@@ -96,11 +96,23 @@ def _run_telegrip_vr(args):
     from pathlib import Path
     import sys as _sys
 
-    _telegrip_root = Path(__file__).resolve().parent / "telegrip"
-    if str(_telegrip_root) not in _sys.path:
-        _sys.path.insert(0, str(_telegrip_root))
+    # Ensure telegrip parent dirs are on sys.path for imports
+    _pkg_root = Path(__file__).resolve().parent
+    if str(_pkg_root) not in _sys.path:
+        _sys.path.insert(0, str(_pkg_root))
+    _telegrip_parent = Path(__file__).resolve().parent / "telegrip"
+    if str(_telegrip_parent) not in _sys.path:
+        _sys.path.insert(0, str(_telegrip_parent))
 
-    from telegrip_adapter import TelegripAdapter
+    # telegrip_adapter.py lives in the outer telegrip/ directory,
+    # NOT inside telegrip/telegrip/.  Import it directly.
+    import importlib.util
+    _adapter_path = _telegrip_parent / "telegrip_adapter.py"
+    _spec = importlib.util.spec_from_file_location("telegrip_adapter", _adapter_path)
+    _adapter_mod = importlib.util.module_from_spec(_spec)
+    _sys.modules["telegrip_adapter"] = _adapter_mod
+    _spec.loader.exec_module(_adapter_mod)
+    TelegripAdapter = _adapter_mod.TelegripAdapter
 
     # Build camera topics for image recording
     cam_topics = {}
@@ -131,7 +143,7 @@ def main(args):
     # For joycon-real mode, always use simulation environment for visualization
     # since the actual control commands are sent via WebSocket from the policy
     if args.sim or args.joycon_real or args.vr_real or args.xl_vr:
-        from mujoco_env import MujocoEnv
+        from sim.mujoco_env import MujocoEnv
         mjcf_path = args.scene if args.scene else None
         robot_start_pos = list(args.robot_pos) if args.robot_pos else None
         if robot_start_pos:
@@ -149,7 +161,7 @@ def main(args):
         else:
             env = MujocoEnv(show_images=args.show_images, randomize_robot_position=args.random, mjcf_path=mjcf_path, robot_start_pos=robot_start_pos)
     else:
-        from real_env import RealEnv
+        from kinova.real_env import RealEnv
         env = RealEnv()
 
     # Create policy
@@ -166,17 +178,17 @@ def main(args):
     elif args.teleop:
         policy = TeleopPolicy()
     elif args.joycon:
-        from joycon_policy import JoyconRemotePolicy
+        from joycon.joycon_policy import JoyconRemotePolicy
         policy = JoyconRemotePolicy()
     elif args.joycon_real:
-        from joycon_real_policy import JoyconRealPolicy
+        from joycon.joycon_real_policy import JoyconRealPolicy
         if args.initial_arm_pos is None or args.initial_arm_quat is None:
             raise ValueError('--initial-arm-pos and --initial-arm-quat are REQUIRED for --joycon-real mode')
         policy = JoyconRealPolicy(websocket_url=args.websocket_url or 'ws://localhost:8765',
                                   custom_initial_arm_pos=args.initial_arm_pos,
                                   custom_initial_arm_quat=args.initial_arm_quat)
     elif args.keyboard:
-        from keyboard_policy import KeyboardRemotePolicy
+        from keyboard.keyboard_policy import KeyboardRemotePolicy
         policy = KeyboardRemotePolicy()
     else:
         policy = RemotePolicy()

@@ -30,27 +30,33 @@ from typing import Optional
 import cv2 as cv
 import numpy as np
 
-# ── path setup ──────────────────────────────────────────
 _HERE = Path(__file__).resolve().parent
-_TELEGRIP_ROOT = _HERE / "telegrip"   # telegrip/telegrip/  is the package
-if str(_TELEGRIP_ROOT) not in sys.path:
-    sys.path.insert(0, str(_TELEGRIP_ROOT))
 
 # ── teleimager imports ──────────────────────────────────
 _TELEIMAGER_SRC = _HERE / "teleimager" / "src"
 if str(_TELEIMAGER_SRC) not in sys.path:
     sys.path.insert(0, str(_TELEIMAGER_SRC))
 
-# ── telegrip imports ────────────────────────────────────
-from telegrip.config import TelegripConfig, get_config_data
-from telegrip.control_loop import ControlLoop
-from telegrip.inputs.vr_ws_server import VRWebSocketServer
-from telegrip.inputs.web_keyboard import WebKeyboardHandler
-from telegrip.inputs.base import ControlGoal, ControlMode
-from telegrip.main import HTTPSServer, TelegripSystem, get_local_ip, create_signal_handler
+# ── telegrip imports (use package-relative imports)
+try:
+    # Prefer absolute imports when telegrip is installed as a package
+    from telegrip.config import TelegripConfig, get_config_data
+    from telegrip.control_loop import ControlLoop
+    from telegrip.inputs.vr_ws_server import VRWebSocketServer
+    from telegrip.inputs.web_keyboard import WebKeyboardHandler
+    from telegrip.inputs.base import ControlGoal, ControlMode
+    from telegrip.main import HTTPSServer, TelegripSystem, get_local_ip, create_signal_handler
+except Exception:
+    # Fallback to package-relative imports for local layout
+    from .config import TelegripConfig, get_config_data
+    from .control_loop import ControlLoop
+    from .inputs.vr_ws_server import VRWebSocketServer
+    from .inputs.web_keyboard import WebKeyboardHandler
+    from .inputs.base import ControlGoal, ControlMode
+    from .main import HTTPSServer, TelegripSystem, get_local_ip, create_signal_handler
 
 # ── bobacbot imports ────────────────────────────────────
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from episode_storage import EpisodeWriter
 
 logger = logging.getLogger("telegrip.adapter")
@@ -80,7 +86,7 @@ class _ImageCollector:
         self._lock = threading.Lock()
 
         # Lazy-import teleimager ZMQ subscriber
-        from teleimager.image_client import ZMQ_SubscriberManager
+        from teleimager.src.teleimager.image_client import ZMQ_SubscriberManager
         self._sub_manager = ZMQ_SubscriberManager.get_instance()
 
         # Start pulling frames immediately

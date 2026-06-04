@@ -10,7 +10,7 @@ import websocket
 from scipy.spatial.transform import Rotation as R
 
 from policies import Policy
-from joyconrobotics import JoyconRobotics
+from ..joyconrobotics import JoyconRobotics
 
 
 # ======================
