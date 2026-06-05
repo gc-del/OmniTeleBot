@@ -6,8 +6,8 @@ import time
 from itertools import count
 from pathlib import Path
 import cv2 as cv
-from ..constants import POLICY_CONTROL_PERIOD
-from ..episode_storage import EpisodeReader
+from constants import POLICY_CONTROL_PERIOD
+from episode_storage import EpisodeReader
 from .mujoco_env import MujocoEnv
 
 def replay_episode(env, episode_dir, show_images=False, execute_obs=False):

@@ -10,7 +10,7 @@ import websocket
 from scipy.spatial.transform import Rotation as R
 
 from policies import Policy
-from ..joyconrobotics import JoyconRobotics
+from joyconrobotics import JoyconRobotics
 
 
 # ======================
@@ -56,7 +56,9 @@ class WSClient:
             try:
                 msg = self.ws.recv()
                 data = json.loads(msg)
-                self.latest_state = data
+                # Only keep robot_state messages (ignore command_ack / command_status)
+                if data.get("type") == "robot_state":
+                    self.latest_state = data
             except Exception:
                 self.connected = False
 
@@ -213,12 +215,13 @@ class JoyconRealPolicy(Policy):
         ctrl_rot = R.from_euler('xyz', [-pose[3], -pose[4], pose[5]])
 
         state = self.ws.latest_state
-        if not state or "arm_state" not in state:
-            print("[WARN] No arm_state yet...")
+        if not state or "arm" not in state:
+            print("[WARN] No arm state yet...")
             return False
 
-        p = state["arm_state"]["pose"]["position"]
-        q = state["arm_state"]["pose"]["orientation"]
+        ee = state["arm"]["ee_pose"]
+        p = ee["position"]
+        q = ee["orientation"]
 
         real_pos = np.array([p["x"], p["y"], p["z"]])
         real_rot = R.from_quat([q["x"], q["y"], q["z"], q["w"]])
@@ -347,51 +350,67 @@ class JoyconRealPolicy(Policy):
     # send
     # ======================
     def _send(self, arm_active):
+        """Send robot_command (v2 protocol).
 
-        # 确定控制模式
-        if self.arm_mode == "homing":
-            control_mode = "init"
-        elif self.arm_mode == "moving":
-            control_mode = "init"
-        elif self.arm_mode == "tracking":
-            control_mode = "tracking"
-        else:  # idle
-            control_mode = "idle"
+        When arm is idle the command uses base_only; when the arm is
+        active (or homing/moving) it switches to whole_body.
+        """
 
-        # base
-        self.ws.send({
-            "teleop_mode": "base",
-            "position": {
+        timestamp = time.time()
+        send_arm = arm_active or self.arm_mode in ("moving", "homing")
+        control_mode = "whole_body" if send_arm else "base_only"
+
+        body = {
+            "type": "robot_command",
+            "schema_version": "v2.0.1",
+            "command_id": f"jc_{timestamp:.6f}",
+            "timestamp": timestamp,
+            "timeout_ms": 500,
+            "preempt_policy": "replace",
+            "control_mode": control_mode,
+        }
+
+        # ── base_cmd (twist) ──────────────────────────────
+        body["base_cmd"] = {
+            "mode": "twist",
+            "frame_id": "base_link",
+            "linear": {
                 "x": float(self.base_cmd[0]),
                 "y": float(self.base_cmd[1]),
-                "z": 0.0
+                "z": 0.0,
             },
-            "orientation": {
+            "angular": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": math.sin(self.base_cmd[2] / 2),
-                "w": math.cos(self.base_cmd[2] / 2)
-            }
-        })
+                "z": float(self.base_cmd[2]),
+            },
+        }
 
-        # 🔥 核心修复：moving阶段也要发
-        if arm_active or self.arm_mode == "moving":
-            self.ws.send({
-                "teleop_mode": "arm",
-                "control_mode": control_mode,
+        # ── arm_cmd (ee_pose) only when active ────────────
+        if send_arm:
+            body["arm_cmd"] = {
+                "mode": "ee_pose",
+                "frame_id": "arm_base",
                 "position": {
                     "x": float(self.arm_pos[0]),
                     "y": float(self.arm_pos[1]),
-                    "z": float(self.arm_pos[2])
+                    "z": float(self.arm_pos[2]),
                 },
                 "orientation": {
                     "x": float(self.arm_quat[0]),
                     "y": float(self.arm_quat[1]),
                     "z": float(self.arm_quat[2]),
-                    "w": float(self.arm_quat[3])
+                    "w": float(self.arm_quat[3]),
                 },
-                "gripper": int(self.gripper_state)
-            })
+            }
+
+        # ── gripper_cmd ───────────────────────────────────
+        body["gripper_cmd"] = {
+            "mode": "position",
+            "position_pct": int(self.gripper_state),
+        }
+
+        self.ws.send(body)
 
     # ======================
     # step

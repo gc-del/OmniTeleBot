@@ -164,8 +164,12 @@ Joy-Con 模式分工如下：
 ### Joy-Con 控制 --- 实物
 
 ```bash
-# Joy-Con 控制真实机器人
-python main.py --joycon-real --websocket-url ws://192.168.1.204:6060
+# Joy-Con 控制真实机器人  eco65
+python main.py --sim --joycon-real \
+  --websocket-url ws://192.168.1.220:6060 \
+  --initial-arm-pos 0.235 0.03 0.520 \
+  --initial-arm-quat -0.505 0.5017 -0.5241 0.4670
+
 ```
 
 Joy-Con 模式分工如下：
