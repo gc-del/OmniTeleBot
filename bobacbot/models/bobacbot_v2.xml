@@ -90,6 +90,12 @@
     <mesh name="rear_lidar_link" file="bobac3/meshes/rear_lidar_link.STL"/>
     <mesh name="basic_kit_link" file="bobac3/meshes/basic_kit_link_cspc.STL"/>
     <mesh name="top_camera_link" file="bobac3/meshes/top_camera_link.STL"/>
+    <mesh name="box_link" file="bobac3/meshes/box_link.STL"/>
+    <mesh name="fixed_arm_base_link" file="bobac3/meshes/fixed_arm_base_link.STL"/>
+
+    <!-- 纹理 -->
+    <texture name="reinovo_tex" type="2d" file="bobac3/meshes/reinovo.png"/>
+    <material name="reinovo_mat" texture="reinovo_tex" texrepeat="1 1"/>
 
     <!-- eco65b机械臂资源 -->
     <mesh name="eco65b/base_link" file="eco65b/meshes/base_link.stl"/>
@@ -192,12 +198,12 @@
       <!-- 顶盖 -->
       <body name="cover_link" pos="0.042015 0 0.2945">
         <inertial pos="-0.04603 0.00011 -0.01220" mass="0.02" diaginertia="0.0077 0.0119 0.0176"/>
-        <geom class="base/visual" mesh="cover_link" material="white"/>
+        <geom class="base/visual" mesh="cover_link" rgba="0 0 0 1"/>
         <geom class="base/collision" mesh="cover_link"/>
         <body name="basic_kit_link" pos="-0.199 0 -0.02">
           <inertial pos="-0.0911672576716816 -0.00375101667946967 0.327523997489668" mass="1.45911195846713"
             diaginertia="0.0111746368285295 0.00566215613507705 0.0092111197679973"/>
-          <geom class="base/visual" mesh="basic_kit_link" material="white"/>
+          <geom class="base/visual" mesh="basic_kit_link" rgba="1 1 1 1"/>
           <geom class="base/collision" mesh="basic_kit_link"/>
           <body name="top_camera_link" pos="-0.016389 0 0.45762" euler="0 0.785 3.14159">
             <inertial pos="-0.0144410472853577 3.50221192592643E-07 -0.0155879253099328" mass="0.0930702512999254"
@@ -205,6 +211,22 @@
             <geom class="base/visual" mesh="top_camera_link" material="dark_gray"/>
             <geom class="base/collision" mesh="top_camera_link"/>
           </body>
+        </body>
+        <!-- 附加盒子 -->
+        <body name="box_link" pos="-0.1 0 0">
+          <inertial pos="-0.0021223 0.00020826 0.051552" mass="0.51429" diaginertia="0.0028723 0.0017457 0.0041231"/>
+          <geom type="mesh" mesh="box_link" group="2" contype="0" conaffinity="0" material="black"/>
+          <geom type="mesh" mesh="box_link" group="3"/>
+        </body>
+        <!-- 机械臂底座板 -->
+        <body name="fixed_arm_base_link" pos="0.06 0 0">
+          <inertial pos="0 0 0.0025" mass="0.10806" diaginertia="0.00035428 0.00010743 0.00046126"/>
+          <geom type="mesh" mesh="fixed_arm_base_link" group="2" contype="0" conaffinity="0" material="black"/>
+          <geom type="mesh" mesh="fixed_arm_base_link" group="3"/>
+        </body>
+        <!-- reinovo 标签 -->
+        <body name="reinovo_label" pos="-0.09 0.0 0.103" euler="0 0 1.5708">
+          <geom type="box" size="0.06 0.015 0.001" material="reinovo_mat" contype="0" conaffinity="0" group="2"/>
         </body>
       </body>
       
