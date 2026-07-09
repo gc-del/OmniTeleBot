@@ -74,10 +74,10 @@ class WebServer:
         key = os.path.expanduser('~/.bobacbot/key.pem')
         if os.path.exists(cert) and os.path.exists(key):
             print(f'HTTPS enabled. Open https://{address}:5000 on Quest 3')
-            self.socketio.run(self.app, host='0.0.0.0', port=5000, ssl_context=(cert, key))
+            self.socketio.run(self.app, host='0.0.0.0', port=5000, ssl_context=(cert, key), allow_unsafe_werkzeug=True)
         else:
             print(f'HTTP mode. Generate certs: mkdir -p ~/.bobacbot && openssl req -x509 -newkey rsa:2048 -keyout ~/.bobacbot/key.pem -out ~/.bobacbot/cert.pem -days 365 -nodes -subj "/CN={address}"')
-            self.socketio.run(self.app, host='0.0.0.0', port=5000)
+            self.socketio.run(self.app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
 
 DEVICE_CAMERA_OFFSET = np.array([0.0, 0.02, -0.04])  # iPhone 14 Pro
 ARM_POSE_DEADZONE = 0.003   # 3 mm (was 10 mm)
@@ -380,6 +380,8 @@ class TeleopPolicy(Policy):
 
 # Execute policy running on remote server
 class RemotePolicy(TeleopPolicy):
+    control_period = 0.1  # 10Hz — match policy server inference rate
+
     def __init__(self):
         super().__init__()
 
@@ -393,8 +395,13 @@ class RemotePolicy(TeleopPolicy):
         print(f'Connected to policy server at {POLICY_SERVER_HOST}:{POLICY_SERVER_PORT}')
 
     def reset(self):
-        # Wait for user to signal that episode has started
-        super().reset()  # Note: Comment out to run without phone
+        # Skip TeleopPolicy.reset() — no phone needed for policy rollout
+        self.teleop_controller = TeleopController()
+        self.episode_ended = False
+
+        # Discard stale messages from previous episode/session
+        while not self.web_server_queue.empty():
+            self.web_server_queue.get()
 
         # Check connection to policy server and reset policy
         default_timeout = self.socket.getsockopt(zmq.RCVTIMEO)
@@ -406,8 +413,8 @@ class RemotePolicy(TeleopPolicy):
             raise Exception('Could not communicate with policy server') from e
         self.socket.setsockopt(zmq.RCVTIMEO, default_timeout)  # Put default timeout back
 
-        # Disable policy execution until user presses on screen
-        self.enabled = False  # Note: Set to True to run without phone
+        # Auto-enable policy execution (no phone needed)
+        self.enabled = True  # Note: Set to False to require phone confirmation
 
     def _step(self, obs):
         # Return teleop command if episode has ended
@@ -438,6 +445,11 @@ class RemotePolicy(TeleopPolicy):
         # Get action from policy server
         rep = self.socket.recv_pyobj()  # Note: Not secure. Only unpickle data you trust.
         action = rep['action']
+
+        # Add required flags for simulation controller
+        if action is not None:
+            action['base_active'] = True
+            action['arm_active'] = True
 
         return action
 
