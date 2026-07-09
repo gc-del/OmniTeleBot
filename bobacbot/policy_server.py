@@ -91,13 +91,17 @@ class DiffusionPolicy:
         return obs_dict
 
     def _convert_action(self, action):
+        from scipy.spatial.transform import Rotation as R_local
+        # 10-dim action: [base_pose(3) + arm_pos(3) + rotvec(3) + gripper(1)]
         act_sequence = []
         for act in action:
+            rotvec = act[6:9]                       # 3D axis-angle
+            quat = R_local.from_rotvec(rotvec).as_quat()  # (x, y, z, w)
             action_dict = {
                 'base_pose': act[:3],
                 'arm_pos': act[3:6],
-                'arm_quat': self.rotation_transformer.forward(act[6:12])[[1, 2, 3, 0]],  # (w, x, y, z) -> (x, y, z, w)
-                'gripper_pos': act[12:13],
+                'arm_quat': quat,
+                'gripper_pos': act[9:10],
             }
             act_sequence.append(action_dict)
         return act_sequence
