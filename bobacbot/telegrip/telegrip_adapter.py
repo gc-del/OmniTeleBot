@@ -136,7 +136,7 @@ class RecordingControlLoop(ControlLoop):
         self._pending_save = False
 
         # Start a dedicated recording timer thread — independent of control loop
-        self._record_interval = 0.1  # 50 Hz
+        self._record_interval = 1.0/30.0  # 50 Hz
         self._record_thread = threading.Thread(target=self._record_loop, daemon=True)
         self._record_thread.start()
 
