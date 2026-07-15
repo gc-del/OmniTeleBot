@@ -61,6 +61,12 @@ def run_episode(env, policy, writer=None):
         if action is None:
             continue
 
+        # DEBUG: 对比当前状态与动作目标
+        if step_idx <= 5 or step_idx % 10 == 0:
+            print(f"[RUN step={step_idx}] obs_base_pose={obs['base_pose']}, act_base_pose={action.get('base_pose')}")
+            print(f"[RUN step={step_idx}] obs_arm_pos={obs['arm_pos']}, act_arm_pos={action.get('arm_pos')}")
+            print(f"[RUN step={step_idx}] obs_gripper={obs['gripper_pos']}, act_gripper={action.get('gripper_pos')}")
+
         # Execute valid action on robot
         if isinstance(action, dict):
             env.step(action)
@@ -138,11 +144,23 @@ def main(args):
         _run_telegrip_vr(args)
         return
 
+    # ── real robot policy inference ─────────────────────
+    if args.real:
+        from kinova.real_env_ws import RealEnvWS
+        if not args.websocket_url:
+            raise ValueError('--websocket-url is REQUIRED for --real mode')
+        env = RealEnvWS(
+            ws_url=args.websocket_url,
+            image_host=getattr(args, 'image_host', '127.0.0.1'),
+            hand_cam_port=getattr(args, 'hand_cam_port', 0),
+            base_cam_port=getattr(args, 'base_cam_port', 0),
+        )
+
     # ── legacy modes ─────────────────────────────────────
     # Create env
     # For joycon-real mode, always use simulation environment for visualization
     # since the actual control commands are sent via WebSocket from the policy
-    if args.sim or args.joycon_real or args.vr_real or args.xl_vr:
+    elif args.sim or args.joycon_real or args.vr_real or args.xl_vr:
         from sim.mujoco_env import MujocoEnv
         mjcf_path = args.scene if args.scene else None
         robot_start_pos = list(args.robot_pos) if args.robot_pos else None
@@ -203,6 +221,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--sim', action='store_true', help='使用仿真环境')
+    parser.add_argument('--real', action='store_true', help='使用实物机器人 + 策略推理 (需 --websocket-url)')
     parser.add_argument('--teleop', action='store_true', help='启用遥操作模式')
     parser.add_argument('--keyboard', action='store_true', help='启用键盘控制模式（按空格开始/结束 episode，无需手机）')
     parser.add_argument('--joycon', action='store_true', help='启用 Joy-Con 控制模式（左手柄控制底盘，右手柄控制机械臂）')
