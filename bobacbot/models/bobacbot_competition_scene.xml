@@ -1,142 +1,176 @@
+This XML file does not appear to have any style information associated with it. The document tree is shown below.
 <mujoco model="Bobacbot competition scene">
-  <include file="bobacbot_v2.xml"/>
-
-  <statistic center="0.25 0 0.6" extent="1.5" meansize="0.05"/>
-
-  <visual>
-    <headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0 0 0"/>
-    <rgba haze="0.15 0.25 0.35 1"/>
-    <global azimuth="120" elevation="-20"/>
-  </visual>
-
-  <asset>
-    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
-    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
-      markrgb="0.8 0.8 0.8" width="300" height="300"/>
-    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5"/>
-
-    <mesh name="competition_field"    file="competition/具身陪伴场地 - 场地-1.STL"     scale="0.001 0.001 0.001"/>
-    <mesh name="competition_table1"   file="competition/具身陪伴场地 - 白色桌子-1.STL" scale="0.001 0.001 0.001"/>
-    <mesh name="competition_table2"   file="competition/具身陪伴场地 - 白色桌子-2.STL" scale="0.001 0.001 0.001"/>
-    <mesh name="competition_trash1"   file="competition/具身陪伴场地 - 垃圾桶-1.STL"   scale="0.001 0.001 0.001"/>
-    <mesh name="competition_trash2"   file="competition/具身陪伴场地 - 垃圾桶-2.STL"   scale="0.001 0.001 0.001"/>
-    <mesh name="competition_part1"    file="competition/具身陪伴场地 - 零件1-1.STL"    scale="0.001 0.001 0.001"/>
-    <!-- Dynamic objects use simple shapes only (box/cylinder/sphere), no STL meshes -->
-  </asset>
-
-  <worldbody>
-    <light pos="0 0 1.5" directional="true"/>
-
-    <geom name="floor" type="plane" size="0 0 0.05" rgba="0.6 0.6 0.6 1"/>
-
-    <body name="competition_field" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="field_geom" type="mesh" mesh="competition_field" rgba="0.7 0.7 0.7 1" contype="0" conaffinity="0"/>
-      <geom name="wall_bottom" type="box" size="1.53 0.20 0.01" pos="1.55 0.649 0.01" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="wall_right"  type="box" size="0.01 0.20 1.53" pos="3.08 0.649 1.54" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="wall_top_r"  type="box" size="0.515 0.20 0.01" pos="2.565 0.649 3.07" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="wall_top_l"  type="box" size="0.515 0.20 0.01" pos="0.535 0.649 3.07" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="wall_left"   type="box" size="0.01 0.20 1.53" pos="0.02 0.649 1.54" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Notch walls -->
-      <geom name="wall_notch_r" type="box" size="0.01 0.20 0.015" pos="2.05 0.649 3.055" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="wall_notch_l" type="box" size="0.01 0.20 0.015" pos="1.05 0.649 3.055" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Inner walls -->
-      <geom name="wall_in_bot"  type="box" size="0.74 0.20 0.01" pos="0.792 0.649 0.04" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="wall_in_bot2" type="box" size="0.74 0.20 0.01" pos="2.308 0.649 0.04" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="wall_in_top"  type="box" size="0.50 0.20 0.01" pos="0.55 0.649 3.04" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="wall_in_vl"   type="box" size="0.01 0.20 0.47" pos="1.535 0.649 0.508" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="wall_in_vr"   type="box" size="0.01 0.20 0.47" pos="1.565 0.649 0.523" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-    </body>
-    <body name="competition_table1" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="table1_geom" type="mesh" mesh="competition_table1" rgba="0.95 0.95 0.95 1"/>
-    </body>
-    <body name="competition_table2" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="table2_geom" type="mesh" mesh="competition_table2" rgba="0.95 0.95 0.95 1"/>
-    </body>
-    <!-- Cabinet: visual-only body + collision body -->
-    <body name="competition_cabinet_vis" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="cabinet_geom" type="mesh" mesh="competition_part1" rgba="0.6 0.55 0.45 1" contype="0" conaffinity="0"/>
-    </body>
-    <body name="competition_cabinet" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <!-- Outer shell panels, each 10mm thick. Position = center of outer and inner faces -->
-      <!-- Y: outer=[0.449,1.019], inner=[0.459,1.009]; X: outer=[0.350,1.070], inner=[0.360,1.060]; Z: outer=[0.040,0.250], inner=[0.050,0.250] -->
-      <geom name="cabinet_wall_l"   type="box" pos="0.355 0.734 0.145" size="0.005 0.285 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_wall_r"   type="box" pos="1.065 0.734 0.145" size="0.005 0.285 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_wall_bot" type="box" pos="0.710 0.454 0.145" size="0.360 0.005 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_wall_top" type="box" pos="0.710 1.014 0.145" size="0.360 0.005 0.105" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_back"     type="box" pos="0.710 0.734 0.045" size="0.360 0.285 0.005" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Inner left/right walls at recessed faces -->
-      <geom name="cabinet_inner_l" type="box" pos="0.360 0.734 0.150" size="0.003 0.275 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_inner_r" type="box" pos="1.060 0.734 0.150" size="0.003 0.275 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Middle shelf: Y faces at 0.899(bottom) and 0.909(top), 10mm thick -->
-      <geom name="cabinet_shelf_mid" type="box" pos="0.710 0.904 0.150" size="0.350 0.005 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Top-level center dividers: only in Y=[0.909,1.009], each 10mm thick -->
-      <geom name="cabinet_div_1" type="box" pos="0.600 0.959 0.150" size="0.005 0.050 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_div_2" type="box" pos="0.820 0.959 0.150" size="0.005 0.050 0.100" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <!-- Front frame at Z=0.250: edges at outer faces forming the front opening -->
-      <geom name="cabinet_front_top"   type="box" pos="0.710 1.019 0.250" size="0.350 0.003 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_front_bot"   type="box" pos="0.710 0.449 0.250" size="0.350 0.003 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_front_l"     type="box" pos="0.350 0.734 0.250" size="0.003 0.285 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_front_r"     type="box" pos="1.070 0.734 0.250" size="0.003 0.285 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="cabinet_front_shelf" type="box" pos="0.710 0.904 0.250" size="0.350 0.003 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-    </body>
-    <!-- Trash can 1: visual-only body + collision body -->
-    <body name="competition_trash1_vis" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="trash1_geom" type="mesh" mesh="competition_trash1" rgba="0.25 0.25 0.25 1" contype="0" conaffinity="0"/>
-    </body>
-    <body name="competition_trash1" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <!-- Trash can: 3 side walls (left, right, bottom edge) + bottom panel. TOP is open -->
-      <geom name="trash1_wall_b" type="box" pos="2.837 0.482 0.285" size="0.09 0.002 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="trash1_wall_r" type="box" pos="2.927 0.572 0.285" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="trash1_wall_l" type="box" pos="2.747 0.572 0.285" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="trash1_bottom"  type="box" pos="2.837 0.572 0.182" size="0.09 0.09 0.002" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-    </body>
-    <!-- Trash can 2: visual-only body + collision body -->
-    <body name="competition_trash2_vis" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <geom name="trash2_geom" type="mesh" mesh="competition_trash2" rgba="0.25 0.25 0.25 1" contype="0" conaffinity="0"/>
-    </body>
-    <body name="competition_trash2" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
-      <!-- Trash can: 3 side walls (left, right, bottom edge) + bottom panel. TOP is open -->
-      <geom name="trash2_wall_b" type="box" pos="2.879 0.482 1.898" size="0.09 0.002 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="trash2_wall_r" type="box" pos="2.969 0.572 1.898" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="trash2_wall_l" type="box" pos="2.789 0.572 1.898" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-      <geom name="trash2_bottom"  type="box" pos="2.879 0.572 1.795" size="0.09 0.09 0.002" rgba="0 0 0 0" contype="1" conaffinity="1"/>
-    </body>
-
-    <body name="competition_milk" pos="-0.795 1.376 0.63">
-      <freejoint/>
-      <geom type="box" size="0.023 0.025 0.060" rgba="0.95 0.95 0.95 1" mass="0.08" friction="0.8 0.5 0.001"/>
-    </body>
-    <body name="competition_bottle" pos="-0.625 1.40 0.61">
-      <freejoint/>
-      <geom type="cylinder" size="0.02 0.038" rgba="0.2 0.7 0.3 1" mass="0.08" friction="0.8 0.5 0.001"/>
-    </body>
-    <body name="competition_apple" pos="-1.003 1.407 0.58">
-      <freejoint/>
-      <geom type="box" size="0.015 0.015 0.015" rgba="0.9 0.15 0.15 1" mass="0.04" friction="0.8 0.5 0.001"/>
-    </body>
-    <body name="competition_block1" pos="-0.915 1.393 0.59">
-      <freejoint/>
-      <geom type="box" size="0.02 0.02 0.02" rgba="0.9 0.15 0.15 1" mass="0.04" friction="0.8 0.5 0.001"/>
-    </body>
-    <body name="competition_block2_1" pos="0.019 -0.255 0.44">
-      <freejoint/>
-      <geom type="box" size="0.024 0.028 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.8 0.5 0.001"/>
-    </body>
-    <body name="competition_block2_2" pos="-0.031 -0.178 0.44">
-      <freejoint/>
-      <geom type="box" size="0.026 0.028 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.8 0.5 0.001"/>
-    </body>
-    <body name="competition_block2_3" pos="0.097 -0.162 0.44">
-      <freejoint/>
-      <geom type="box" size="0.028 0.026 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.8 0.5 0.001"/>
-    </body>
-    <body name="competition_block2_4" pos="-0.094 -0.351 0.44">
-      <freejoint/>
-      <geom type="box" size="0.022 0.028 0.025" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.8 0.5 0.001"/>
-    </body>
-    <body name="competition_block2_5" pos="0.063 -0.334 0.44">
-      <freejoint/>
-      <geom type="box" size="0.025 0.028 0.028" rgba="0.25 0.35 0.9 1" mass="0.02" friction="0.8 0.5 0.001"/>
-    </body>
-  </worldbody>
+<include file="bobacbot_v2.xml"/>
+<statistic center="0.25 0 0.6" extent="1.5" meansize="0.05"/>
+<visual>
+<headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0 0 0"/>
+<rgba haze="0.15 0.25 0.35 1"/>
+<global azimuth="120" elevation="-20"/>
+</visual>
+<asset>
+<texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+<texture type="2d" name="groundplane" file="competition/floor.png"/>
+<material name="groundplane" texture="groundplane" texuniform="true" texrepeat="0.62 0.62"/>
+<texture type="2d" name="floorplane" file="competition/floor2.png"/>
+<material name="floorplane" texture="floorplane" texuniform="true" texrepeat="0.62 0.62"/>
+<mesh name="competition_field" file="competition/具身陪伴场地 - 场地-1.STL" scale="0.001 0.001 0.001"/>
+<mesh name="competition_table1" file="competition/具身陪伴场地 - 白色桌子-1.STL" scale="0.001 0.001 0.001"/>
+<mesh name="competition_table2" file="competition/具身陪伴场地 - 白色桌子-2.STL" scale="0.001 0.001 0.001"/>
+<mesh name="competition_trash1" file="competition/具身陪伴场地 - 垃圾桶-1.STL" scale="0.001 0.001 0.001"/>
+<mesh name="competition_trash2" file="competition/具身陪伴场地 - 垃圾桶-2.STL" scale="0.001 0.001 0.001"/>
+<mesh name="competition_drawer" file="competition/Drawer.STL" scale="0.00072 0.00072 0.00072"/>
+<mesh name="competition_dressing_table" file="competition/Dressing Table Assy.STL" scale="0.00072 0.00072 0.00072"/>
+<mesh name="competition_plate" file="competition/圆碟子.stl" scale="0.0007 0.0007 0.0007"/>
+<mesh name="competition_bowl" file="competition/碗.stl" scale="0.0005 0.0005 0.0005"/>
+<mesh name="competition_spoon" file="competition/spoon 2.stl" scale="0.005 0.005 0.005"/>
+<mesh name="competition_part001" file="competition/零件001.stl" scale="0.001 0.001 0.001"/>
+<texture type="2d" name="label1_tex" file="competition/label1.png"/>
+<texture type="2d" name="label2_tex" file="competition/label2.png"/>
+<texture type="2d" name="label3_tex" file="competition/label3.png"/>
+<texture type="2d" name="label4_tex" file="competition/label4.png"/>
+<material name="label1_mat" texture="label1_tex" texuniform="true" texrepeat="1 1"/>
+<material name="label2_mat" texture="label2_tex" texuniform="true" texrepeat="1 1"/>
+<material name="label3_mat" texture="label3_tex" texuniform="true" texrepeat="1 1"/>
+<material name="label4_mat" texture="label4_tex" texuniform="true" texrepeat="1 1"/>
+<!--  Dynamic objects use simple shapes only (box/cylinder/sphere), no STL meshes  -->
+</asset>
+<worldbody>
+<light pos="0 0 1.5" directional="true"/>
+<geom name="floor" type="box" pos="0 0 0" size="1.53 1.53 0.001" material="floorplane" contype="0" conaffinity="0"/>
+<body name="competition_field" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
+<geom name="field_geom" type="mesh" mesh="competition_field" rgba="0.7 0.7 0.7 1" contype="0" conaffinity="0"/>
+<geom name="wall_bottom" type="box" size="1.53 0.20 0.03" pos="1.55 0.649 0.02" material="groundplane" rgba="1 1 1 1" contype="1" conaffinity="1"/>
+<geom name="wall_right" type="box" size="0.03 0.20 1.53" pos="3.07 0.649 1.54" material="groundplane" rgba="1 1 1 1" contype="1" conaffinity="1"/>
+<geom name="wall_top_r" type="box" size="0.515 0.20 0.03" pos="2.565 0.649 3.06" material="groundplane" rgba="1 1 1 1" contype="1" conaffinity="1"/>
+<geom name="wall_top_l" type="box" size="0.515 0.20 0.03" pos="0.535 0.649 3.06" material="groundplane" rgba="1 1 1 1" contype="1" conaffinity="1"/>
+<geom name="wall_left" type="box" size="0.03 0.20 1.53" pos="0.03 0.649 1.54" material="groundplane" rgba="1 1 1 1" contype="1" conaffinity="1"/>
+<!--  Notch walls  -->
+<geom name="wall_notch_r" type="box" size="0.01 0.20 0.015" pos="2.05 0.649 3.055" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="wall_notch_l" type="box" size="0.01 0.20 0.015" pos="1.05 0.649 3.055" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<!--  Inner walls  -->
+<geom name="wall_in_bot" type="box" size="0.74 0.20 0.01" pos="0.792 0.649 0.04" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="wall_in_bot2" type="box" size="0.74 0.20 0.01" pos="2.308 0.649 0.04" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="wall_in_top" type="box" size="0.50 0.20 0.01" pos="0.55 0.649 3.04" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="wall_in_vl" type="box" size="0.01 0.20 0.47" pos="1.535 0.649 0.508" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="wall_in_vr" type="box" size="0.01 0.20 0.47" pos="1.565 0.649 0.523" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+</body>
+<body name="competition_table1" pos="-2.55 0.59 -0.45" euler="1.5708 0 0">
+<geom name="table1_geom" type="mesh" mesh="competition_table1" rgba="0.95 0.95 0.95 1"/>
+</body>
+<body name="competition_table2" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
+<geom name="table2_geom" type="mesh" mesh="competition_table2" rgba="0.95 0.95 0.95 1"/>
+</body>
+<!--  Dressing table + 4 pullable drawers (0.75x scale, slide joints)  -->
+<body name="competition_dressing_table_vis" pos="-1.40 1.35 0" euler="1.5708 0 0">
+<geom name="dressing_table_geom" type="mesh" mesh="competition_dressing_table" rgba="0.6 0.55 0.45 1" contype="0" conaffinity="0"/>
+<!--  Collision shell: 10mm panels, 3 shelves (0.72x)  -->
+<geom name="dt_wall_l" type="box" pos="0.0092 0.3096 0.1656" size="0.005 0.3096 0.1656" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="dt_wall_r" type="box" pos="0.8344 0.3096 0.1656" size="0.005 0.3096 0.1656" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="dt_wall_bot" type="box" pos="0.4218 0.005 0.1656" size="0.4176 0.005 0.1656" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="dt_wall_top" type="box" pos="0.4218 0.6142 0.1656" size="0.4176 0.005 0.1656" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="dt_back" type="box" pos="0.4218 0.3096 0.005" size="0.4176 0.3096 0.005" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="dt_shelf_1" type="box" pos="0.4218 0.1548 0.1656" size="0.4176 0.005 0.1656" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="dt_shelf_2" type="box" pos="0.4218 0.3096 0.1656" size="0.4176 0.005 0.1656" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="dt_shelf_3" type="box" pos="0.4218 0.4644 0.1656" size="0.4176 0.005 0.1656" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<!--  4 drawers (0.72x scale) with slide joints  -->
+<body name="competition_drawer_1" pos="0.053 0.000 0.000">
+<joint name="drawer1_slide" type="slide" axis="0 0 1" range="0 0.28" damping="0.3" frictionloss="0.05"/>
+<inertial pos="0.369 0.068 0.179" mass="1.8" diaginertia="0.022 0.099 0.083"/>
+<geom name="drawer1_vis" type="mesh" mesh="competition_drawer" rgba="0.8 0.75 0.65 1" contype="0" conaffinity="0"/>
+<geom name="drawer1_handle" type="box" pos="0.369 0.068 0.329" size="0.107 0.010 0.030" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="drawer1_label" type="box" pos="0.369 0.090 0.33" size="0.06 0.012 0.001" material="label1_mat" contype="0" conaffinity="0"/>
+<geom name="drawer1_floor" type="box" pos="0.369 0.035 0.17" size="0.35 0.030 0.16" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="drawer1_back" type="box" pos="0.369 0.068 0.003" size="0.35 0.06 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+</body>
+<body name="competition_drawer_2" pos="0.053 0.1548 0.000">
+<joint name="drawer2_slide" type="slide" axis="0 0 1" range="0 0.28" damping="0.3" frictionloss="0.05"/>
+<inertial pos="0.369 0.068 0.179" mass="1.8" diaginertia="0.022 0.099 0.083"/>
+<geom name="drawer2_vis" type="mesh" mesh="competition_drawer" rgba="0.8 0.75 0.65 1" contype="0" conaffinity="0"/>
+<geom name="drawer2_handle" type="box" pos="0.369 0.068 0.329" size="0.107 0.010 0.030" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="drawer2_label" type="box" pos="0.369 0.090 0.33" size="0.06 0.012 0.001" material="label2_mat" contype="0" conaffinity="0"/>
+<geom name="drawer2_floor" type="box" pos="0.369 0.035 0.17" size="0.35 0.030 0.16" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="drawer2_back" type="box" pos="0.369 0.068 0.003" size="0.35 0.06 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+</body>
+<body name="competition_drawer_3" pos="0.053 0.3096 0.000">
+<joint name="drawer3_slide" type="slide" axis="0 0 1" range="0 0.28" damping="0.3" frictionloss="0.05"/>
+<inertial pos="0.369 0.068 0.179" mass="1.8" diaginertia="0.022 0.099 0.083"/>
+<geom name="drawer3_vis" type="mesh" mesh="competition_drawer" rgba="0.8 0.75 0.65 1" contype="0" conaffinity="0"/>
+<geom name="drawer3_handle" type="box" pos="0.369 0.068 0.329" size="0.107 0.010 0.030" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="drawer3_label" type="box" pos="0.369 0.090 0.33" size="0.06 0.012 0.001" material="label3_mat" contype="0" conaffinity="0"/>
+<geom name="drawer3_floor" type="box" pos="0.369 0.035 0.17" size="0.35 0.030 0.16" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="drawer3_back" type="box" pos="0.369 0.068 0.003" size="0.35 0.06 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+</body>
+<body name="competition_drawer_4" pos="0.053 0.4644 0.000">
+<joint name="drawer4_slide" type="slide" axis="0 0 1" range="0 0.28" damping="0.3" frictionloss="0.05"/>
+<inertial pos="0.369 0.068 0.179" mass="1.8" diaginertia="0.022 0.099 0.083"/>
+<geom name="drawer4_vis" type="mesh" mesh="competition_drawer" rgba="0.8 0.75 0.65 1" contype="0" conaffinity="0"/>
+<geom name="drawer4_handle" type="box" pos="0.369 0.068 0.329" size="0.107 0.010 0.030" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="drawer4_label" type="box" pos="0.369 0.090 0.33" size="0.06 0.012 0.001" material="label4_mat" contype="0" conaffinity="0"/>
+<geom name="drawer4_floor" type="box" pos="0.369 0.035 0.17" size="0.35 0.030 0.16" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="drawer4_back" type="box" pos="0.369 0.068 0.003" size="0.35 0.06 0.003" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+</body>
+</body>
+<!--  Objects on top of dressing table, arranged in a row  -->
+<body name="competition_milk" pos="0.20 1.05 0.43">
+<freejoint/>
+<geom type="box" size="0.023 0.025 0.060" rgba="0.95 0.95 0.95 1" mass="0.08" friction="2.0 1.5 0.01"/>
+</body>
+<body name="competition_bottle" pos="-0.98 1.19 0.36">
+<freejoint/>
+<geom type="cylinder" size="0.02 0.038" rgba="0.2 0.7 0.3 1" mass="0.08" friction="2.0 1.5 0.01"/>
+</body>
+<body name="competition_apple" pos="-0.90 1.20 0.640">
+<freejoint/>
+<geom type="box" size="0.015 0.015 0.015" rgba="0.9 0.15 0.15 1" mass="0.04" friction="2.0 1.5 0.01"/>
+</body>
+<!--  Trash can 1: visual-only body + collision body  -->
+<body name="competition_trash1_vis" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
+<geom name="trash1_geom" type="mesh" mesh="competition_trash1" rgba="0.25 0.25 0.25 1" contype="0" conaffinity="0"/>
+</body>
+<body name="competition_trash1" pos="-1.55 1.54 -0.45" euler="1.5708 0 0">
+<!--  Trash can: 3 side walls (left, right, bottom edge) + bottom panel. TOP is open  -->
+<geom name="trash1_wall_b" type="box" pos="2.837 0.482 0.285" size="0.09 0.002 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="trash1_wall_r" type="box" pos="2.927 0.572 0.285" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="trash1_wall_l" type="box" pos="2.747 0.572 0.285" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="trash1_bottom" type="box" pos="2.837 0.572 0.182" size="0.09 0.09 0.002" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+</body>
+<!--  Trash can 2: visual-only body + collision body  -->
+<body name="competition_trash2_vis" pos="-1.55 0.60 -0.45" euler="1.5708 0 0">
+<geom name="trash2_geom" type="mesh" mesh="competition_trash2" rgba="0.25 0.25 0.25 1" contype="0" conaffinity="0"/>
+</body>
+<body name="competition_trash2" pos="-1.55 0.60 -0.45" euler="1.5708 0 0">
+<!--  Trash can: 3 side walls (left, right, bottom edge) + bottom panel. TOP is open  -->
+<geom name="trash2_wall_b" type="box" pos="2.879 0.482 1.898" size="0.09 0.002 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="trash2_wall_r" type="box" pos="2.969 0.572 1.898" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="trash2_wall_l" type="box" pos="2.789 0.572 1.898" size="0.002 0.09 0.10" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+<geom name="trash2_bottom" type="box" pos="2.879 0.572 1.795" size="0.09 0.09 0.002" rgba="0 0 0 0" contype="1" conaffinity="1"/>
+</body>
+<!--  Dish, bowl, spoon on table  -->
+<body name="competition_plate" pos="-0.95 -1.20 0.46">
+<freejoint/>
+<geom name="plate_vis" type="mesh" mesh="competition_plate" rgba="0.85 0.90 0.95 1" contype="0" conaffinity="0"/>
+<geom name="plate_col" type="cylinder" pos="0 0 0.004" size="0.036 0.004" rgba="0 0 0 0" mass="0.05" friction="2.0 1.5 0.01"/>
+</body>
+<body name="competition_bowl" pos="-1.05 -1.20 0.46">
+<freejoint/>
+<geom name="bowl_vis" type="mesh" mesh="competition_bowl" rgba="0.85 0.55 0.35 1" contype="0" conaffinity="0"/>
+<geom name="bowl_col" type="cylinder" pos="0 0 0.010" size="0.024 0.010" rgba="0 0 0 0" mass="0.015" friction="2.0 1.5 0.01"/>
+</body>
+<body name="competition_part001" pos="-1.10 -1.38 0.40">
+<freejoint/>
+<geom name="part001_vis" type="mesh" mesh="competition_part001" rgba="0.7 0.7 0.75 1" contype="0" conaffinity="0"/>
+<geom name="part001_col" type="box" pos="0.095 0.050 0.025" size="0.095 0.050 0.025" rgba="0 0 0 0" mass="0.2" friction="2.0 1.5 0.01"/>
+</body>
+<body name="competition_spoon" pos="-1.0 -1.15 0.50">
+<freejoint/>
+<geom name="spoon_vis" type="mesh" mesh="competition_spoon" rgba="0.75 0.75 0.75 1" contype="0" conaffinity="0"/>
+<geom name="spoon_col" type="box" pos="0.023 0.0 0.005" size="0.015 0.012 0.025" rgba="0 0 0 0" mass="0.03" friction="2.0 1.5 0.01"/>
+</body>
+</worldbody>
+<contact>
+<exclude body1="competition_dressing_table_vis" body2="competition_drawer_1"/>
+<exclude body1="competition_dressing_table_vis" body2="competition_drawer_2"/>
+<exclude body1="competition_dressing_table_vis" body2="competition_drawer_3"/>
+<exclude body1="competition_dressing_table_vis" body2="competition_drawer_4"/>
+</contact>
 </mujoco>
