@@ -373,14 +373,14 @@ class TelegripAdapter:
 
     def __init__(
         self,
-        ws_url: str = "ws://192.168.1.220:6060",
+        ws_url: Optional[str] = None,
         output_dir: str = "data/episodes",
         save: bool = True,
         log_level: str = "info",
         image_host: str = "127.0.0.1",
         cam_topics: Optional[dict] = None,
     ):
-        self.ws_url = ws_url
+        self.ws_url = ws_url or os.getenv("ROBOT_WS_URL", "ws://127.0.0.1:6060")
         self.output_dir = output_dir
         self.save = save
         self.log_level = log_level

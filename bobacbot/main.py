@@ -127,8 +127,9 @@ def _run_telegrip_vr(args):
     if getattr(args, 'base_cam_port', 0) > 0:
         cam_topics["base_camera"] = args.base_cam_port
 
+    ws_target = args.websocket_url or os.getenv("ROBOT_WS_URL", "ws://127.0.0.1:6060")
     adapter = TelegripAdapter(
-        ws_url=args.websocket_url or "ws://192.168.1.220:6060",
+        ws_url=ws_target,
         output_dir=args.output_dir,
         save=args.save,
         log_level="info",

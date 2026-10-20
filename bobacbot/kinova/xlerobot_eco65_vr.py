@@ -70,7 +70,8 @@ class WSClient:
 #  Main VR → ECO65 control loop
 # ═══════════════════════════════════════════════════════════════
 def main():
-    ws_url = sys.argv[1] if len(sys.argv) > 1 else "ws://192.168.1.220:6060"
+    default_ws = os.getenv("ROBOT_WS_URL", "ws://127.0.0.1:6060")
+    ws_url = sys.argv[1] if len(sys.argv) > 1 else default_ws
     log.info(f"XLerobot VR → ECO65  ws={ws_url}")
 
     # ── 1. Start XLerobot VR pipeline ──────────────────────

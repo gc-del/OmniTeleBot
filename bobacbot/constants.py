@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 ################################################################################
@@ -14,11 +15,11 @@ ENCODER_MAGNET_OFFSETS = [0.0 / 4096, 0.0 / 4096, 0.0 / 4096, 0.0 / 4096]  # TOD
 # Teleop and imitation learning
 
 # Base and arm RPC servers
-BASE_RPC_HOST = 'localhost'
-BASE_RPC_PORT = 50000
-ARM_RPC_HOST = 'localhost'
-ARM_RPC_PORT = 50001
-RPC_AUTHKEY = b'secret password'
+BASE_RPC_HOST = os.getenv('BASE_RPC_HOST', 'localhost')
+BASE_RPC_PORT = int(os.getenv('BASE_RPC_PORT', 50000))
+ARM_RPC_HOST = os.getenv('ARM_RPC_HOST', 'localhost')
+ARM_RPC_PORT = int(os.getenv('ARM_RPC_PORT', 50001))
+RPC_AUTHKEY = os.getenv('RPC_AUTHKEY', 'bobac_dev_secret_authkey').encode('utf-8')
 
 # Cameras
 BASE_CAMERA_SERIAL = 'TODO'

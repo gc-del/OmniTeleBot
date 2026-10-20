@@ -27,8 +27,9 @@ from utils import create_pid_file
 class TorqueControlledArm:
     def __init__(self):
         # Check whether arm is connected
+        arm_ip = os.getenv('ARM_IP_ADDRESS', '192.168.1.10')
         try:
-            subprocess.run(['ping', '-c', '1',  '192.168.1.10'], check=True, timeout=1, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(['ping', '-c', '1', arm_ip], check=True, timeout=1, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except subprocess.TimeoutExpired as e:
             raise Exception('Could not communicate with arm') from e
 
@@ -377,9 +378,9 @@ class TorqueControlledArm:
         return pos, quat
 
 class DeviceConnection:
-    IP_ADDRESS = '192.168.1.10'
-    TCP_PORT = 10000
-    UDP_PORT = 10001
+    IP_ADDRESS = os.getenv('ARM_IP_ADDRESS', '192.168.1.10')
+    TCP_PORT = int(os.getenv('ARM_TCP_PORT', '10000'))
+    UDP_PORT = int(os.getenv('ARM_UDP_PORT', '10001'))
 
     @staticmethod
     def createTcpConnection():
@@ -389,10 +390,13 @@ class DeviceConnection:
     def createUdpConnection():
         return DeviceConnection(port=DeviceConnection.UDP_PORT)
 
-    def __init__(self, ip_address=IP_ADDRESS, port=TCP_PORT, credentials=('admin', 'admin')):
-        self.ip_address = ip_address
-        self.port = port
-        self.credentials = credentials
+    def __init__(self, ip_address=None, port=None, credentials=None):
+        self.ip_address = ip_address or self.IP_ADDRESS
+        self.port = port if port is not None else self.TCP_PORT
+        if credentials is not None:
+            self.credentials = credentials
+        else:
+            self.credentials = (os.getenv('ARM_USERNAME', 'admin'), os.getenv('ARM_PASSWORD', 'admin'))
         self.session_manager = None
         self.transport = TCPTransport() if port == DeviceConnection.TCP_PORT else UDPTransport()
         self.router = RouterClient(self.transport, RouterClient.basicErrorCallback)

@@ -1,8 +1,12 @@
-# Bobacbot
+# Bobacbot: 全向移动具身抓取与多模态遥操作具身控制系统
+### Omnidirectional Mobile Manipulation, Multi-Modal Teleoperation & Imitation Learning System
 
-Bobacbot 是一个用于模仿学习和遥操作研究的全向移动操作机器人项目。当前代码基于 MuJoCo 仿真，集成了 Bobac3 全向底盘、Elephant Robotics eco65b 六自由度机械臂、Robotiq 2F-85 夹爪，以及相机观测、遥操作采集、Episode 回放和 Diffusion Policy 训练链路。
+[![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Physics Engine](https://img.shields.io/badge/Simulation-MuJoCo%203.2-orange.svg)](https://mujoco.org/)
+[![Framework](https://img.shields.io/badge/Imitation%20Learning-Diffusion%20Policy%20%7C%20Robomimic-purple.svg)](#)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-本仓库的目标是把“仿真、控制、采集、训练、推理”串成一条完整闭环，方便你直接采集抓取/放置演示数据，并训练模型用于抓取任务。
+Bobacbot 是一个面向具身智能（Embodied AI）与模仿学习研究的全向移动操作机器人系统。代码支持 MuJoCo 高精度物理仿真与物理真机无缝切换，集成了 Bobac3 全向移动底盘、Elephant Robotics eco65b 六自由度机械臂、Robotiq 2F-85 工业夹爪，并打通多视点视觉感知、多模态遥操作数据采集（WebXR / Quest 3 / Joy-Con）、标准化 Episode 归档以及 Diffusion Policy 离线训练与实时闭环推理链路。
 
 ## 目录
 

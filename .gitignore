@@ -1,3 +1,49 @@
-.vscode/
+﻿# 环境变量与敏感配置
+.env
+.env.*
+!.env.example
+
+# 证书与密钥文件 (自签名/本地证书脱敏)
+*.pem
+*.key
+*.crt
+
+# Python 缓存与构建产物
 __pycache__/
+*.py[cod]
+*.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# 仿真大模型日志与权重缓存
 data/
+*.h5
+*.hdf5
+*.pth
+*.pt
+*.onnx
+*.ckpt
+MJMODEL.TXT
+MUJOCO_LOG.TXT
+*.log
+
+# 录屏与临时视频媒体
+*.mp4
+*.mkv
+*.avi
+
+# IDE 与操作系统配置
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
